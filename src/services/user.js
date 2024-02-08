@@ -19,6 +19,14 @@ class UserService {
 		return this.userRepository.getBy({ query: { email }, options: newOptions })
 	}
 
+	async updateUserBy({ query, data }) {
+		return await this.userRepository.updateBy({ query, data })
+	}
+
+	async updateUserById(id, data) {
+		return await this.updateUserBy({ query: { id }, data })
+	}
+
 	generateOptions(options = {}) {
 		const { isLogin, attributes = {}, ...newOptions } = options
 		if (Array.isArray(attributes)) {
