@@ -4,10 +4,6 @@ class BaseRepository {
 		this._transaction  = transaction
 	}
 
-	async commitChanges() {
-		await this.transaction.commit()
-	}
-
 	async countData({ query, options }) {
 		return await this.model.count({ ...options, where: query })
 	}
@@ -37,12 +33,12 @@ class BaseRepository {
 		}
 	}
 
-	async rollbackChanges() {
-		await this.transaction.rollback()
+	async saveModel(model) {
+		await model.save()
 	}
 
-	async saveModel(data) {
-		return data.save()
+	async storeData(payload) {
+		return await this.model.create(payload, { transaction: this.transaction })
 	}
 
 	generateModel(data) {

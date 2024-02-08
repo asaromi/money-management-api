@@ -1,11 +1,8 @@
 'use strict'
 require('dotenv').config()
 
-const fs = require('fs')
-const path = require('path')
-const { Sequelize } = require('sequelize')
+const { Sequelize, DataTypes, Op } = require('sequelize')
 const process = require('process')
-const basename = path.basename(__filename)
 const env = process.env.NODE_ENV || 'development'
 const config = require('../../config/database')[env]
 const db = {}
@@ -18,9 +15,11 @@ if (config?.use_env_variable) {
 }
 
 const sequelize = new Sequelize(...payload)
-// const User = require('./user')(sequelize, Sequelize.DataTypes)
+// const Category = require('./category')(sequelize, DataTypes)
+const User = require('./user')(sequelize, DataTypes)
 // const Wallet = require('./wallet')(sequelize, Sequelize.DataTypes)
-// db.User = User
+// db.Category = Category
+db.User = User
 // db.Wallet = Wallet
 
 Object.keys(db).forEach(modelName => {
@@ -31,5 +30,6 @@ Object.keys(db).forEach(modelName => {
 
 db.sequelize = sequelize
 db.Sequelize = Sequelize
+db.Op = Op
 
 module.exports = db
