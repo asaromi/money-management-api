@@ -29,6 +29,7 @@ const register = async (req, res, next) => {
 		}
 
 		await transaction.rollback()
+		userService.setTransaction(null)
 		req.error = error
 	} finally {
 		next()
@@ -79,4 +80,30 @@ const getAuthUser = async (req, res, next) => {
 	}
 }
 
-module.exports = { getAuthUser, login, register }
+const resetPassword = async (req, res, next) => {
+	const transaction = await sequelize.transaction()
+	try {
+		userService.setTransaction(transaction)
+		if (req.error) throw req.error
+
+		const { password: plainPassword } = req.body
+		const password = await hashPassword(plainPassword)
+		const [updated] = await userService.updateUserById(req.user.id, { password })
+		if (!updated) throw new InvariantError('Failed to reset password')
+
+		req.message = 'Password reset successfully'
+		req.statusCode = 200
+	} catch (error) {
+		if (!(error instanceof Error)) {
+			error = new InvariantError(error.message)
+		}
+
+		await transaction.rollback()
+		userService.setTransaction(null)
+		req.error = error
+	} finally {
+		next()
+	}
+}
+
+module.exports = { getAuthUser, login, register, resetPassword }
