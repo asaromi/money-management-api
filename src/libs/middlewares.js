@@ -24,23 +24,6 @@ const authenticate = async (req, res, next) => {
 	}
 }
 
-const authorize = (...roles) =>
-	(req, res, next) => {
-		try {
-			const { user } = req
-			if (!user) throw new AuthError('Unauthorized')
-
-			debug(user.role)
-			if (roles.length && !roles.includes(user.role)) {
-				throw new ForbiddenError('Forbidden Access')
-			}
-
-			next()
-		} catch (error) {
-			return errorResponse({ res, error })
-		}
-	}
-
 const handleResponse = (req, res) => {
 	const { error, result, statusCode: code } = req
 	let message = !req.message && !result && 'Hello World!' || req.message
@@ -65,4 +48,4 @@ const validateSchema = (schema = Joi.object(), source = 'body') =>
 		}
 	}
 
-module.exports = { authenticate, authorize, handleResponse, validateSchema }
+module.exports = { authenticate, handleResponse, validateSchema }
