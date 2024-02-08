@@ -2,29 +2,25 @@ const UserRepository = require('../repositories/user')
 
 class UserService {
 	constructor(transaction) {
-		this._userRepository = new UserRepository(transaction)
+		this.userRepository = new UserRepository(transaction)
 	}
 
 	async createUser(payload) {
-		return this._userRepository.createUser(payload)
+		return this.userRepository.storeData(payload)
 	}
 
 	async getUserById(id, options = {}) {
 		const newOptions = this.generateOptions(options)
-
-		console.log(newOptions)
-		return this._userRepository.getBy({ query: { id }, options: newOptions })
+		return this.userRepository.getBy({ query: { id }, options: newOptions })
 	}
 
 	async getUserByEmail(email, options = {}) {
 		const newOptions = this.generateOptions(options)
-
-		console.log(newOptions)
-		return this._userRepository.getBy({ query: { email }, options: newOptions })
+		return this.userRepository.getBy({ query: { email }, options: newOptions })
 	}
 
 	generateOptions(options = {}) {
-		const { isLogin, isMiddleware, attributes = {}, ...newOptions } = options
+		const { isLogin, attributes = {}, ...newOptions } = options
 		if (Array.isArray(attributes)) {
 			newOptions.attributes = {
 				include: attributes,
@@ -35,11 +31,15 @@ class UserService {
 			newOptions.attributes = attributes
 		}
 
-		if (isLogin || isMiddleware) {
+		if (isLogin) {
 			newOptions.attributes.exclude = attributes.exclude.filter((attribute) => attribute !== 'password')
 		}
 
 		return newOptions
+	}
+	
+	setTransaction(transaction) {
+		this.userRepository.transaction = transaction
 	}
 }
 
