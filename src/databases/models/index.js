@@ -15,10 +15,10 @@ if (config?.use_env_variable) {
 }
 
 const sequelize = new Sequelize(...payload)
-// const Category = require('./category')(sequelize, DataTypes)
+const Category = require('./category')(sequelize, DataTypes)
 const User = require('./user')(sequelize, DataTypes)
 // const Wallet = require('./wallet')(sequelize, Sequelize.DataTypes)
-// db.Category = Category
+db.Category = Category
 db.User = User
 // db.Wallet = Wallet
 
