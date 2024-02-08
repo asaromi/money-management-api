@@ -1,13 +1,16 @@
-const { errorResponse, successResponse } = require('../libs/response')
-const { InvariantError } = require('../libs/exceptions')
-const UserService = require('../services/user')
+const { sequelize } = require('../databases/models')
 const { hashPassword, comparePassword } = require('../libs/bcrypt')
+const { InvariantError } = require('../libs/exceptions')
 const { generateToken } = require('../libs/jwt')
 
+const UserService = require('../services/user')
 const userService = new UserService()
 
 const register = async (req, res, next) => {
+	const transaction = await sequelize.transaction()
+
 	try {
+		userService.setTransaction(transaction)
 		if (req.error) throw req.error
 
 		const password = await hashPassword(req.body.password)
@@ -17,14 +20,15 @@ const register = async (req, res, next) => {
 		const token = await generateToken({ id: user.id })
 		if (!token) throw new InvariantError('Failed to generate token')
 
+		await transaction.commit()
 		req.result = { token }
-		req.message = 'User registered successfully'
 		req.statusCode = 201
 	} catch (error) {
 		if (!(error instanceof Error)) {
 			error = new InvariantError(error.message)
 		}
 
+		await transaction.rollback()
 		req.error = error
 	} finally {
 		next()
@@ -75,4 +79,4 @@ const getAuthUser = async (req, res, next) => {
 	}
 }
 
-module.exports = { getAuthUser, register, login }
+module.exports = { getAuthUser, login, register }

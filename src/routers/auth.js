@@ -7,12 +7,12 @@ const router = new Router()
 router.get('/',
 	authenticate,
 	getAuthUser,
-	handleResponse
+	handleResponse,
 )
 router.post('/register',
 	validateSchema(createUserSchema),
 	register,
-	handleResponse
+	handleResponse,
 )
 router.post('/login', login, handleResponse)
 
