@@ -41,6 +41,10 @@ class BaseRepository {
 		return await this.model.create(payload, { transaction: this.transaction })
 	}
 
+	async updateBy({ query, data }){
+		return await this.model.update(data, { where: query, transaction: this.transaction })
+	}
+
 	generateModel(data) {
 		return new this.model(data)
 	}
