@@ -1,7 +1,6 @@
 require('dotenv').config()
 
 const debug = (...props) => {
-	console.log(process.env.NODE_ENV, process.env.DEBUG)
 	if (process.env.NODE_ENV !== 'development' || process.env.DEBUG !== 'true') {
 		return ''
 	}

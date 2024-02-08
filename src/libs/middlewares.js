@@ -14,7 +14,7 @@ const authenticate = async (req, res, next) => {
 		const [type, token] = authorization.split(' ')
 		const { id } = type === 'Bearer' && await verifyToken(token) || {}
 
-		const user = await userService.getUserById(id, { isMiddleware: true })
+		const user = await userService.getUserById(id, { raw: true })
 		if (!user) throw new AuthError('User not found')
 
 		req.user = user
