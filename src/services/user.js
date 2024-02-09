@@ -1,4 +1,6 @@
 const UserRepository = require('../repositories/user')
+const { redisClient } = require('../configs/redis')
+const { debug } = require('../libs/response')
 
 class UserService {
 	constructor(transaction) {
@@ -15,12 +17,30 @@ class UserService {
 
 	async getUserById(id, options = {}) {
 		const newOptions = this.generateOptions(options)
-		return this.userRepository.getBy({ query: { id }, options: newOptions })
+
+		const redisKey = `users:U-${id}`
+		const cached = await redisClient.get(redisKey)
+		if (cached) {
+			return JSON.parse(cached)
+		}
+
+		const user = await this.userRepository.getBy({ query: { id }, options: newOptions })
+		redisClient.set(redisKey, JSON.stringify(user), { 'EX': 300 })
+		return user
 	}
 
 	async getUserByEmail(email, options = {}) {
 		const newOptions = this.generateOptions(options)
-		return this.userRepository.getBy({ query: { email }, options: newOptions })
+
+		const redisKey = `users:E-${email}`
+		const cached = await redisClient.get(redisKey)
+		if (cached) {
+			return JSON.parse(cached)
+		}
+
+		const user = await this.userRepository.getBy({ query: { email }, options: newOptions })
+		redisClient.set(redisKey, JSON.stringify(user), { 'EX': 300 })
+		return user
 	}
 
 	async updateUserBy({ query, data }) {

@@ -42,7 +42,8 @@ const getPaginationWallets = async (req, res, next) => {
 		const { id: userId } = req.user
 
 		const userCondition = { userId }
-		let query
+		let query = userCondition
+		let redisKey = 'wallets'
 		if (name) {
 			// do the query for lowered column name
 			query = {
@@ -53,8 +54,8 @@ const getPaginationWallets = async (req, res, next) => {
 					userCondition,
 				],
 			}
-		} else {
-			query = userCondition
+
+			redisKey += `:Q-${name.toLowerCase()}`
 		}
 
 		const options = {
@@ -67,7 +68,7 @@ const getPaginationWallets = async (req, res, next) => {
 			page,
 		}
 
-		req.result = await walletService.getAndCountWallets({ query, options })
+		req.result = await walletService.getAndCountWallets({ query, options, redisKey })
 	} catch (error) {
 		if (!(error instanceof Error)) {
 			error = new InvariantError(error.message)

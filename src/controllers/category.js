@@ -33,6 +33,7 @@ const getPaginationCategories = async (req, res, next) => {
 		const { q: name } = req.query
 
 		let query
+		let redisKey = 'categories'
 		const parseName = (name || '').toLowerCase().replaceAll(/ /g, '-')
 		if (name) {
 			query = {
@@ -43,6 +44,8 @@ const getPaginationCategories = async (req, res, next) => {
 					{ slug: { [Op.like]: `%${parseName}%` } }
 				]
 			}
+
+			redisKey += `:Q-${parseName}`
 		}
 
 		const options = {
@@ -53,7 +56,7 @@ const getPaginationCategories = async (req, res, next) => {
 			]
 		}
 
-		req.result = await categoryService.getAndCountCategories({ query, options })
+		req.result = await categoryService.getAndCountCategories({ query, options, redisKey })
 	} catch (error) {
 		if (!(error instanceof Error)) {
 			error = new InvariantError(error.message)

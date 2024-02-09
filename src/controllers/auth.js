@@ -57,7 +57,6 @@ const login = async (req, res, next) => {
 		if (!token) throw new InvariantError('Failed to generate token')
 
 		req.result = { user, token }
-		req.message = 'User logged in successfully'
 	} catch (error) {
 		if (!(error instanceof Error)) {
 			error = new InvariantError(error.message)
