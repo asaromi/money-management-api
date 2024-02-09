@@ -17,10 +17,10 @@ if (config?.use_env_variable) {
 const sequelize = new Sequelize(...payload)
 const Category = require('./category')(sequelize, DataTypes)
 const User = require('./user')(sequelize, DataTypes)
-// const Wallet = require('./wallet')(sequelize, Sequelize.DataTypes)
+const Wallet = require('./wallet')(sequelize, Sequelize.DataTypes)
 db.Category = Category
 db.User = User
-// db.Wallet = Wallet
+db.Wallet = Wallet
 
 Object.keys(db).forEach(modelName => {
 	if (db[modelName].associate) {
