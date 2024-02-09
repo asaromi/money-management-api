@@ -5,7 +5,7 @@ const url = `${HOST}:${PORT}`
 
 describe('Testing Categories endpoints', () => {
 	let id, slug
-	const name = 'Internet & Subscription'
+	const name = 'Zakat Profesi'
 	const token = 'eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjAxaHA1NjBocXgyeTBkeWQ5OWU4dnl3YmdkIiwiaWF0IjoxNzA3NDIzNTgyLCJleHAiOjE3MDc1MDk5ODJ9.Mn2qZY4hsgL3ImWD21LOBCJTeKEY-B2ly5MDdKCUMCMNdQOS1cTeC-fpLz8oTZj_483oMqQf4rjaE0E2KM0cxw'
 
 	it('[Success] Create category', async () => {
@@ -32,7 +32,13 @@ describe('Testing Categories endpoints', () => {
 
 		expect(res.statusCode).toEqual(200)
 		expect(res.body).toHaveProperty('result')
-		expect(res.body.result).toBeInstanceOf(Array)
+
+		expect(res.body.result).toHaveProperty('pagination')
+		expect(res.body.result).toHaveProperty('data')
+		expect(res.body.result.data).toBeInstanceOf(Array)
+
+		const exists = res.body.result.data.find(category => category.id === id)
+		expect(exists).toBeTruthy()
 	})
 
 	it('[Success] Get categories with search query', async () => {
@@ -40,9 +46,12 @@ describe('Testing Categories endpoints', () => {
 
 		expect(res.statusCode).toEqual(200)
 		expect(res.body).toHaveProperty('result')
-		expect(res.body.result).toBeInstanceOf(Array)
 
-		const exists = res.body.result.find(category => category.id === id)
+		expect(res.body.result).toHaveProperty('pagination')
+		expect(res.body.result).toHaveProperty('data')
+		expect(res.body.result.data).toBeInstanceOf(Array)
+
+		const exists = res.body.result.data.find(category => category.id === id)
 		expect(exists).toBeTruthy()
 	})
 
