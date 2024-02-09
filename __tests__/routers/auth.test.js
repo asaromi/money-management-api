@@ -25,8 +25,8 @@ describe('Testing Auth endpoints', () => {
 
 	it('[Success] Login user', async () => {
 		const res = await request(url).post('/api/auth/login').send({
-			email: 'asami.mayuri1@gmail.com',
-			password: 'password',
+			email,
+			password,
 		})
 
 		expect(res.statusCode).toEqual(200)
