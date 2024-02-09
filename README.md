@@ -7,6 +7,12 @@ Money Management API is a simple API to manage your money, especially for your w
 This project is developed using NodeJS and ExpressJS as the main framework, and using PostgreSQL as the main database.
 The project also using `sequelize` as the ORM to manage the database.
 
+**Why MVC and MVCSR Pattern?**
+
+The project is developed with MVCSR (Model-View-Controller-Service-Repository) pattern.
+The main purpose of this pattern is to separate the business logic and the database logic, so it can be more maintainable and scalable.
+The pattern is more familiar and simple for me. Especially for the latest few months, I have been learning and implementing it and other related pattern like OOP.  
+
 Requirements
 ----
 - NodeJS (develop using Node18) - for more info or documentation you can access [here](https://nodejs.org)
@@ -48,3 +54,7 @@ List of API functionalities
 | Delete Wallet by Id               | */api/wallets/:id*         | DELETE | Endpoint to delete wallet by id                                              |
 
 For specific API testing example, you can open the documentation [here](https://documenter.getpostman.com/view/15820910/2s9YyzcHha)
+
+Deployed API
+----
+You can access the deployed API at [here](https://money-api.asaromi.biz.id/api)
