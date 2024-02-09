@@ -1,4 +1,4 @@
-const { sequelize, Op } = require('../databases/models')
+const { sequelize, Op, Sequelize } = require('../databases/models')
 const { InvariantError } = require('../libs/exceptions')
 
 const CategoryService = require('../services/category')
@@ -32,13 +32,25 @@ const getCategories = async (req, res, next) => {
 	try {
 		const { q: name } = req.query
 
-		let query = {}
-		if (name) query.name = { [Op.like]: `%${name}%` }
-		else query = null
+		let query
+		const parseName = (name || '').toLowerCase().replaceAll(/ /g, '-')
+		if (name) {
+			query = {
+				[Op.or]: [
+					Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('name')), {
+						[Op.like]: `%${name.toLowerCase()}%`,
+					}),
+					{ slug: { [Op.like]: `%${parseName}%` } }
+				]
+			}
+		}
 
 		const options = {
 			attributes: ['id', 'name', 'slug'],
-			order: [['createdAt', 'ASC']]
+			order: [
+				['updatedAt', 'DESC'],
+				['id', 'ASC']
+			]
 		}
 
 		req.result = await categoryService.getCategories({ query, options })

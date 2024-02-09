@@ -23,7 +23,7 @@ describe('Testing Categories endpoints', () => {
 		id = res.body.result.id
 
 		expect(res.body.result).toHaveProperty('slug')
-		expect(res.body.result.slug).toEqual(name.toLowerCase().split(' ').join('-'))
+		expect(res.body.result.slug).toEqual(name.toLowerCase().replace('&', 'and').replaceAll(/ /g, '-'))
 		slug = res.body.result.slug
 	})
 

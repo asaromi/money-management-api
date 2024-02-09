@@ -7,7 +7,9 @@ class CategoryService {
 	}
 
 	async createCategory(payload) {
-		payload.slug = payload.name.toLowerCase().split(' ').join('-')
+		payload.slug = payload.name.toLowerCase()
+			.replace('&', 'and')
+			.replaceAll(/ /g, '-')
 		return this.categoryRepository.storeData(payload)
 	}
 
