@@ -3,7 +3,9 @@ Money Management API - Backend Skill Test
 
 Introduction
 ----
-Ticket Reservation API is an implemented locket reservation flow with HTTP API request. The project using Node JS (ExpressJS) as backend, and PostgreSQL as database (with Sequelize as ORM). I used migrations instead of .sql for the database. This is a simple project skill test for applyment as Fullstack Developer in GorryWell.
+Money Management API is a simple API to manage your money, especially for your wallet and category (The current phase).
+This project is developed using NodeJS and ExpressJS as the main framework, and using PostgreSQL as the main database.
+The project also using `sequelize` as the ORM to manage the database.
 
 Requirements
 ----
@@ -19,8 +21,9 @@ How to Setup
 - The comment environment variable is optional like PORT, HOST, and others.
 
 **Special Note**
-
+----
 If you want to use MySQL as database, you need to install `mysql2` package by executing `npm install --save-dev mysql2` or `yarn add --dev mysql2` on terminal
+
 **Database Setup**
 - Create new database to your Database server (PostgreSQL or MySQL)
 - Copy `.env.example` as `.env` and change required data to access database (`DB_NAME`, `DB_PORT`, `DB_USER`, `DB_HOST`, and `DB_PASS`)
