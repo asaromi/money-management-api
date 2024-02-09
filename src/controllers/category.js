@@ -11,8 +11,9 @@ const storeCategory = async (req, res, next) => {
 		if (req.error) throw req.error
 
 		const category = await categoryService.createCategory(req.body)
-
+		if (!category) throw new InvariantError('Failed to create category')
 		await transaction.commit()
+
 		req.result = category
 		req.statusCode = 201
 	} catch (error) {
