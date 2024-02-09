@@ -28,7 +28,7 @@ const storeCategory = async (req, res, next) => {
 	}
 }
 
-const getCategories = async (req, res, next) => {
+const getPaginationCategories = async (req, res, next) => {
 	try {
 		const { q: name } = req.query
 
@@ -53,7 +53,7 @@ const getCategories = async (req, res, next) => {
 			]
 		}
 
-		req.result = await categoryService.getCategories({ query, options })
+		req.result = await categoryService.getAndCountCategories({ query, options })
 	} catch (error) {
 		if (!(error instanceof Error)) {
 			error = new InvariantError(error.message)
@@ -69,7 +69,7 @@ const getCategoryBySlug = async (req, res, next) => {
 	try {
 		const { slug } = req.params
 
-		const category = await categoryService.getCategoryBy({ slug })
+		const category = await categoryService.getCategoryBy({ query: { slug } })
 		if (!category) throw new InvariantError('Category not found')
 
 		req.result = category
@@ -136,4 +136,4 @@ const deleteCategoryById = async (req, res, next) => {
 	}
 }
 
-module.exports = { deleteCategoryById, getCategories, getCategoryBySlug, storeCategory, updateCategoryById }
+module.exports = { deleteCategoryById, getCategoryBySlug, getPaginationCategories, storeCategory, updateCategoryById }

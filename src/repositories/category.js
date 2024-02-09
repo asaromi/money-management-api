@@ -11,8 +11,6 @@ class CategoryRepository extends BaseRepository {
 			options.where = query
 		}
 
-		console.log('options', options)
-		console.log('query', query)
 		return await this.model.findAll({ raw: true, ...options })
 	}
 }

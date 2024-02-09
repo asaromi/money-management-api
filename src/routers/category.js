@@ -1,10 +1,10 @@
 const { Router } = require('express')
 const { handleResponse, validateSchema, authenticate } = require('../libs/middlewares')
 const {	createSchema: createCategorySchema } = require('../validators/category')
-const {	getCategories,	getCategoryBySlug, storeCategory } = require('../controllers/category')
+const {	getCategoryBySlug, getPaginationCategories, storeCategory } = require('../controllers/category')
 const router = new Router()
 
-router.get('/', getCategories, handleResponse)
+router.get('/', getPaginationCategories, handleResponse)
 router.get('/:slug', getCategoryBySlug, handleResponse)
 router.post(
 	'/',
