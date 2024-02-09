@@ -4,8 +4,12 @@ class BaseRepository {
 		this._transaction  = transaction
 	}
 
-	async countData({ query, options }) {
+	async countBy({ query, options }) {
 		return await this.model.count({ ...options, where: query })
+	}
+
+	async deleteBy({ query }) {
+		return await this.model.destroy({ where: query, transaction: this.transaction })
 	}
 
 	async getBy({ query, options }) {
@@ -13,11 +17,12 @@ class BaseRepository {
 	}
 
 	async getPagination({ query, options = {} }) {
-		const { limit = '10', page: currentPage = '1' } = query
+		const { limit = '10', page: currentPage = '1', ...restOptions } = options
 		const offset = limit * (parseInt(currentPage) - 1)
 
 		const { count, rows } = await this.model.findAndCountAll({
-			...options,
+			...restOptions,
+			where: query,
 			limit: parseInt(limit),
 			offset,
 		})
@@ -33,20 +38,12 @@ class BaseRepository {
 		}
 	}
 
-	async saveModel(model) {
-		await model.save()
-	}
-
 	async storeData(payload) {
 		return await this.model.create(payload, { transaction: this.transaction })
 	}
 
 	async updateBy({ query, data }){
 		return await this.model.update(data, { where: query, transaction: this.transaction })
-	}
-
-	generateModel(data) {
-		return new this.model(data)
 	}
 
 	set transaction(transaction) {

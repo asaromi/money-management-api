@@ -13,10 +13,6 @@ class CategoryRepository extends BaseRepository {
 
 		return await this.model.findAll({ raw: true, ...options })
 	}
-
-	async deleteBy({ query }) {
-		return await this.model.destroy({ where: query, transaction: this.transaction })
-	}
 }
 
 module.exports = CategoryRepository
