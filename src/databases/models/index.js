@@ -4,7 +4,7 @@ require('dotenv').config()
 const { Sequelize, DataTypes, Op } = require('sequelize')
 const process = require('process')
 const env = process.env.NODE_ENV || 'development'
-const config = require('../../config/database')[env]
+const config = require('../../configs/database')[env]
 const db = {}
 
 const payload = []
