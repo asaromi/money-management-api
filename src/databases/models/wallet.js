@@ -28,6 +28,9 @@ module.exports = (sequelize, DataTypes = DT) => {
       type: DataTypes.STRING,
     },
   }, {
+    defaultScope: {
+      attributes: { exclude: ['deletedAt'] },
+    },
     modelName: 'Wallet',
     paranoid: true,
     sequelize,
