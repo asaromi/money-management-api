@@ -5,6 +5,10 @@ class UserService {
 		this.userRepository = new UserRepository(transaction)
 	}
 
+	async countUsers({ query }) {
+		return this.userRepository.countBy({ query })
+	}
+
 	async createUser(payload) {
 		return this.userRepository.storeData(payload)
 	}

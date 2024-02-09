@@ -13,7 +13,13 @@ const register = async (req, res, next) => {
 		userService.setTransaction(transaction)
 		if (req.error) throw req.error
 
-		const password = await hashPassword(req.body.password)
+		const [password, countUser] = await Promise.all([
+			await hashPassword(req.body.password),
+			userService.countUsers({ email: req.body.email }),
+		])
+
+		if (countUser > 0) throw new InvariantError('Email already exists')
+
 		const user = await userService.createUser({ ...req.body, password })
 		if (!user) throw new InvariantError('Failed to create user')
 
