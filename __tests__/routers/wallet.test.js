@@ -5,9 +5,9 @@ const url = `${HOST}:${PORT}`
 
 describe('Testing Wallets endpoints', () => {
 	let id
-	const name = 'Bibit Invesment'
-	const newName = 'Pluang Investment'
-	const token = 'eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjAxaHA1NjBocXgyeTBkeWQ5OWU4dnl3YmdkIiwiaWF0IjoxNzA3NDIzNTgyLCJleHAiOjE3MDc1MDk5ODJ9.Mn2qZY4hsgL3ImWD21LOBCJTeKEY-B2ly5MDdKCUMCMNdQOS1cTeC-fpLz8oTZj_483oMqQf4rjaE0E2KM0cxw'
+	const name = 'BCA Digital Account'
+	const newName = 'Blu Account by BCA Digital'
+	const token = 'eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjAxaHA1NjBocXgyeTBkeWQ5OWU4dnl3YmdkIiwiaWF0IjoxNzA3NTIzODk1LCJleHAiOjE3MDc2MTAyOTV9.CmoAT8OFfhD5AEZBmC1nbc5E0QJz8uoQDRU46W7YJFYu4g6kFLvv0FKZ8Uar7AOZ9sz1NQAKChvUEzGAf8d4Pw'
 
 	it('[Success] Create wallet', async () => {
 		const res = await request(url).post('/api/wallets').set('Authorization', `Bearer ${token}`).send({

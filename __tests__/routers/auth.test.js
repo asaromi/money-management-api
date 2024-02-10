@@ -5,9 +5,9 @@ const url = `${HOST}:${PORT}`
 
 describe('Testing Auth endpoints', () => {
 	let token
-	const email = 'asami.mayuri1@gmail.com'
+	const email = 'example.user2@gmail.com'
 	const password = 'password'
-	const name = 'Asami Mayuri'
+	const name = 'Example User'
 	const newPassword = 'passwordNew'
 
 	it('[Success] Register user', async () => {
