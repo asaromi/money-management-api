@@ -12,7 +12,12 @@ class WalletService {
 	}
 	
 	async createWallet(payload) {
-		return this.walletRepository.storeData(payload)
+		const wallet = await this.walletRepository.storeData(payload)
+		if (wallet) {
+			await redisClient.del('wallets')
+		}
+
+		return wallet
 	}
 
 	async deleteWalletBy({ query }) {
@@ -37,19 +42,21 @@ class WalletService {
 		}
 
 		const wallets = await this.walletRepository.getPagination({ query, options })
-		await redisClient.set(key, JSON.stringify(wallets), { 'EX': 300 })
+		await redisClient.set(redisKey, JSON.stringify(wallets), { 'EX': 300 })
 		return wallets
 	}
 
 	async getWalletBy({ query, options }) {
-		const key = `wallets:W-${query.id}`
-		const cached = await redisClient.get(key)
+		const redisKey = `wallets:W-${query.id}`
+		const cached = await redisClient.get(redisKey)
 		if (cached) {
 			return JSON.parse(cached)
 		}
 
 		const wallet = await this.walletRepository.getBy({ query, options })
-		await redisClient.set(key, JSON.stringify(wallet), { 'EX': 300 })
+		if (wallet) {
+			await redisClient.set(redisKey, JSON.stringify(wallet), { 'EX': 300 })
+		}
 		return wallet
 	}
 

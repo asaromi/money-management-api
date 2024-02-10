@@ -42,7 +42,9 @@ class CategoryService {
 		}
 
 		const category = await this.categoryRepository.getBy({ query, options })
-		await redisClient.set(redisKey, JSON.stringify(category), { 'EX': 300 })
+		if(category) {
+			await redisClient.set(redisKey, JSON.stringify(category), { 'EX': 300 })
+		}
 
 		return category
 	}

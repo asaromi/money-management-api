@@ -25,7 +25,9 @@ class UserService {
 		}
 
 		const user = await this.userRepository.getBy({ query: { id }, options: newOptions })
-		redisClient.set(redisKey, JSON.stringify(user), { 'EX': 300 })
+		if (user) {
+			await redisClient.set(redisKey, JSON.stringify(user), { 'EX': 300 })
+		}
 		return user
 	}
 
@@ -39,7 +41,9 @@ class UserService {
 		}
 
 		const user = await this.userRepository.getBy({ query: { email }, options: newOptions })
-		redisClient.set(redisKey, JSON.stringify(user), { 'EX': 300 })
+		if(user) {
+			redisClient.set(redisKey, JSON.stringify(user), { 'EX': 300 })
+		}
 		return user
 	}
 

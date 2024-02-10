@@ -33,17 +33,20 @@ const storeWallet = async (req, res, next) => {
 }
 
 const getPaginationWallets = async (req, res, next) => {
-	const transaction = await sequelize.transaction()
 	try {
-		walletService.setTransaction(transaction)
 		if (req.error) throw req.error
 
 		const { q: name, limit, page } = req.query
 		const { id: userId } = req.user
 
+		let redisKey = 'wallets'
+		if (name || limit || page) {
+			const queryParams = new URLSearchParams(req.query)
+			redisKey += `:Q-${queryParams.toString()}`
+		}
+
 		const userCondition = { userId }
 		let query = userCondition
-		let redisKey = 'wallets'
 		if (name) {
 			// do the query for lowered column name
 			query = {
@@ -54,8 +57,6 @@ const getPaginationWallets = async (req, res, next) => {
 					userCondition,
 				],
 			}
-
-			redisKey += `:Q-${name.toLowerCase()}`
 		}
 
 		const options = {
@@ -74,8 +75,6 @@ const getPaginationWallets = async (req, res, next) => {
 			error = new InvariantError(error.message)
 		}
 
-		await transaction.rollback()
-		walletService.setTransaction(null)
 		req.error = error
 	} finally {
 		next()

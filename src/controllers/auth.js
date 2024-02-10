@@ -4,6 +4,7 @@ const { InvariantError } = require('../libs/exceptions')
 const { generateToken } = require('../libs/jwt')
 
 const UserService = require('../services/user')
+const { debug } = require('../libs/response')
 const userService = new UserService()
 
 const register = async (req, res, next) => {
@@ -13,9 +14,11 @@ const register = async (req, res, next) => {
 		userService.setTransaction(transaction)
 		if (req.error) throw req.error
 
+		debug('Registering user', req.body)
+
 		const [password, countUser] = await Promise.all([
-			await hashPassword(req.body.password),
-			userService.countUsers({ email: req.body.email }),
+			hashPassword(req.body.password),
+			userService.countUsers({ query: { email: req.body.email } }),
 		])
 
 		if (countUser > 0) throw new InvariantError('Email already exists')

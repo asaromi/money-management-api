@@ -30,10 +30,15 @@ const storeCategory = async (req, res, next) => {
 
 const getPaginationCategories = async (req, res, next) => {
 	try {
-		const { q: name } = req.query
+		const { q: name, limit, page } = req.query
+
+		let redisKey = 'categories'
+		if (name || limit || page) {
+			const queryParams = new URLSearchParams(req.query)
+			redisKey += `:Q-${queryParams.toString()}`
+		}
 
 		let query
-		let redisKey = 'categories'
 		const parseName = (name || '').toLowerCase().replaceAll(/ /g, '-')
 		if (name) {
 			query = {
@@ -44,8 +49,6 @@ const getPaginationCategories = async (req, res, next) => {
 					{ slug: { [Op.like]: `%${parseName}%` } }
 				]
 			}
-
-			redisKey += `:Q-${parseName}`
 		}
 
 		const options = {
