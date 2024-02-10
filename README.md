@@ -16,6 +16,7 @@ The pattern is more familiar and simple for me. Especially for the latest few mo
 Requirements
 ----
 - NodeJS (develop using Node18) - for more info or documentation you can access [here](https://nodejs.org)
+- Redis
 - PostgreSQL (develop using postgresql15.1) - for more info or documentation you can access [here](https://www.postgresql.org/)
 - or MySQL (with specific setup/configuration)
 
@@ -31,6 +32,7 @@ How to Setup
 If you want to use MySQL as database, you need to install `mysql2` package by executing `npm install --save-dev mysql2` or `yarn add --dev mysql2` on terminal
 
 **Database Setup**
+- Start your Redis server & Database server
 - Create new database to your Database server (PostgreSQL or MySQL)
 - Copy `.env.example` as `.env` and change required data to access database (`DB_NAME`, `DB_PORT`, `DB_USER`, `DB_HOST`, and `DB_PASS`)
 - Execute command `npm run db:migrate` or `yarn db:migrate` on terminal
