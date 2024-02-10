@@ -1,3 +1,4 @@
+const { InvariantError } = require('./exceptions')
 require('dotenv').config()
 
 const debug = (...props) => {
@@ -17,7 +18,6 @@ const debugError = (...props) => {
 }
 
 const successResponse = ({ res, result, message, statusCode = 200 }) => {
-	debug(statusCode)
 	return res.status(statusCode).json({
 		success: true,
 		message,
@@ -25,7 +25,7 @@ const successResponse = ({ res, result, message, statusCode = 200 }) => {
 	})
 }
 
-const errorResponse = ({ res, error = new Error(), statusCode = 500 }) => {
+const errorResponse = ({ res, error = new InvariantError(), statusCode = 500 }) => {
 	const { message, statusCode: code } = error
 
 	debugError(error)
