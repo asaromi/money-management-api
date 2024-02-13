@@ -15,39 +15,43 @@ class UserService {
 		return this.userRepository.storeData(payload)
 	}
 
-	async getUserById(id, options = {}) {
-		const newOptions = this.generateOptions(options)
+	async getUserBy({ query, options }) {
+		let redisKey = 'users'
+		if (query.email) redisKey += `:E-${query.email}`
+		if (query.id) redisKey += `:U-${query.id}`
 
-		const redisKey = `users:U-${id}`
 		const cached = await redisClient.get(redisKey)
 		if (cached) {
 			return JSON.parse(cached)
 		}
 
-		const user = await this.userRepository.getBy({ query: { id }, options: newOptions })
+		const newOptions = this.generateOptions(options)
+		const user = await this.userRepository.getBy({ query, options: newOptions })
 		if (user) {
 			await redisClient.set(redisKey, JSON.stringify(user), { 'EX': 300 })
 		}
+
 		return user
+	}
+
+	async getUserById(id, options = {}) {
+		return await this.getUserBy({ query: { id }, options })
 	}
 
 	async getUserByEmail(email, options = {}) {
-		const newOptions = this.generateOptions(options)
-
-		const redisKey = `users:E-${email}`
-		const cached = await redisClient.get(redisKey)
-		if (cached) {
-			return JSON.parse(cached)
-		}
-
-		const user = await this.userRepository.getBy({ query: { email }, options: newOptions })
-		if(user) {
-			redisClient.set(redisKey, JSON.stringify(user), { 'EX': 300 })
-		}
-		return user
+		return await this.getUserBy({ query: { email }, options })
 	}
 
 	async updateUserBy({ query, data }) {
+		let redisKey = 'users'
+		if (query.email) redisKey += `:E-${query.email}`
+		if (query.id) redisKey += `:U-${query.id}`
+
+		const cached = await redisClient.get(redisKey)
+		if (cached) {
+			await redisClient.del(redisKey)
+		}
+
 		return await this.userRepository.updateBy({ query, data })
 	}
 
