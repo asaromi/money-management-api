@@ -1,32 +1,31 @@
-const { Router } = require('express')
 const { getAuthUser, login, register, resetPassword } = require('../controllers/auth')
-const { validateSchema, handleResponse, authenticate } = require('../libs/middlewares')
+const { authenticate, handleResponse, validateSchema } = require('../libs/middlewares')
 const { createSchema: createUserSchema, resetPasswordSchema } = require('../validators/user')
-const router = new Router()
+const { wrapHandler } = require('../libs/formatter')
 
-router.get(
-	'/',
-	authenticate,
-	getAuthUser,
-	handleResponse,
-)
-router.post(
-	'/login',
-	login,
-	handleResponse
-)
-router.post(
-	'/register',
-	validateSchema(createUserSchema),
-	register,
-	handleResponse,
-)
-router.patch(
-	'/reset-password',
-	authenticate,
-	validateSchema(resetPasswordSchema),
-	resetPassword,
-	handleResponse,
-)
+const authRouters = (fastify, options, done) => {
+	fastify.get('/', ...wrapHandler(
+		authenticate,
+		getAuthUser,
+		handleResponse
+	))
+	fastify.post('/login', ...wrapHandler(
+		login,
+		handleResponse
+	))
+	fastify.post('/register', ...wrapHandler(
+		validateSchema(createUserSchema),
+		register,
+		handleResponse
+	))
+	fastify.patch('/reset-password', ...wrapHandler(
+		authenticate,
+		validateSchema(resetPasswordSchema),
+		resetPassword,
+		handleResponse
+	))
 
-module.exports = router
+	done()
+}
+
+module.exports = authRouters
