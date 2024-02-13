@@ -4,7 +4,7 @@ const { InvariantError } = require('../libs/exceptions')
 const CategoryService = require('../services/category')
 const categoryService = new CategoryService()
 
-const storeCategory = async (req, res, next) => {
+const storeCategory = async (req, res) => {
 	const transaction = await sequelize.transaction()
 	try {
 		categoryService.setTransaction(transaction)
@@ -23,12 +23,10 @@ const storeCategory = async (req, res, next) => {
 
 		await transaction.rollback()
 		req.error = error
-	} finally {
-		next()
 	}
 }
 
-const getPaginationCategories = async (req, res, next) => {
+const getPaginationCategories = async (req, res) => {
 	try {
 		const { q: name, limit, page } = req.query
 
@@ -66,12 +64,10 @@ const getPaginationCategories = async (req, res, next) => {
 		}
 
 		req.error = error
-	} finally {
-		next()
 	}
 }
 
-const getCategoryBySlug = async (req, res, next) => {
+const getCategoryBySlug = async (req, res) => {
 	try {
 		const { slug } = req.params
 
@@ -85,12 +81,10 @@ const getCategoryBySlug = async (req, res, next) => {
 		}
 
 		req.error = error
-	} finally {
-		next()
 	}
 }
 
-const updateCategoryById = async (req, res, next) => {
+const updateCategoryById = async (req, res) => {
 	const transaction = await sequelize.transaction()
 	try {
 		categoryService.setTransaction(transaction)
@@ -111,12 +105,10 @@ const updateCategoryById = async (req, res, next) => {
 		await transaction.rollback()
 		categoryService.setTransaction(null)
 		req.error = error
-	} finally {
-		next()
 	}
 }
 
-const deleteCategoryById = async (req, res, next) => {
+const deleteCategoryById = async (req, res) => {
 	const transaction = await sequelize.transaction()
 	try {
 		categoryService.setTransaction(transaction)
@@ -137,8 +129,6 @@ const deleteCategoryById = async (req, res, next) => {
 		await transaction.rollback()
 		categoryService.setTransaction(null)
 		req.error = error
-	} finally {
-		next()
 	}
 }
 

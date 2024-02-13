@@ -6,7 +6,7 @@ const Joi = require('joi')
 
 const userService = new UserService()
 
-const authenticate = async (req, res, next) => {
+const authenticate = async (req, res) => {
 	try {
 		const { authorization } = req.headers
 		if (!authorization) throw new AuthError('Token not found')
@@ -18,7 +18,6 @@ const authenticate = async (req, res, next) => {
 		if (!user) throw new AuthError('User not found')
 
 		req.user = user
-		if (next) next()
 	} catch (error) {
 		return errorResponse({ res, error })
 	}

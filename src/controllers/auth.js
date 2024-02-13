@@ -7,7 +7,7 @@ const UserService = require('../services/user')
 const { debug } = require('../libs/response')
 const userService = new UserService()
 
-const register = async (req, res, next) => {
+const register = async (req, res) => {
 	const transaction = await sequelize.transaction()
 
 	try {
@@ -40,12 +40,10 @@ const register = async (req, res, next) => {
 		await transaction.rollback()
 		userService.setTransaction(null)
 		req.error = error
-	} finally {
-		next()
 	}
 }
 
-const login = async (req, res, next) => {
+const login = async (req, res) => {
 	try {
 		if (req.error) throw req.error
 
@@ -66,12 +64,10 @@ const login = async (req, res, next) => {
 		}
 
 		req.error = error
-	} finally {
-		next()
 	}
 }
 
-const getAuthUser = async (req, res, next) => {
+const getAuthUser = async (req, res) => {
 	try {
 		if (req.error) throw req.error
 
@@ -83,12 +79,10 @@ const getAuthUser = async (req, res, next) => {
 		}
 
 		req.error = error
-	} finally {
-		next()
 	}
 }
 
-const resetPassword = async (req, res, next) => {
+const resetPassword = async (req, res) => {
 	const transaction = await sequelize.transaction()
 	try {
 		userService.setTransaction(transaction)
@@ -109,8 +103,6 @@ const resetPassword = async (req, res, next) => {
 		await transaction.rollback()
 		userService.setTransaction(null)
 		req.error = error
-	} finally {
-		next()
 	}
 }
 

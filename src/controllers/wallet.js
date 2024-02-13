@@ -4,7 +4,7 @@ const { BadRequestError, ForbiddenError, InvariantError } = require('../libs/exc
 const WalletService = require('../services/wallet')
 const walletService = new WalletService()
 
-const storeWallet = async (req, res, next) => {
+const storeWallet = async (req, res) => {
 	const transaction = await sequelize.transaction()
 	try {
 		walletService.setTransaction(transaction)
@@ -27,12 +27,10 @@ const storeWallet = async (req, res, next) => {
 		await transaction.rollback()
 		walletService.setTransaction(null)
 		req.error = error
-	} finally {
-		next()
 	}
 }
 
-const getPaginationWallets = async (req, res, next) => {
+const getPaginationWallets = async (req, res) => {
 	try {
 		if (req.error) throw req.error
 
@@ -76,12 +74,10 @@ const getPaginationWallets = async (req, res, next) => {
 		}
 
 		req.error = error
-	} finally {
-		next()
 	}
 }
 
-const getWalletById = async (req, res, next) => {
+const getWalletById = async (req, res) => {
 	try {
 		if (req.error) throw req.error
 
@@ -103,12 +99,10 @@ const getWalletById = async (req, res, next) => {
 		}
 
 		req.error = error
-	} finally {
-		next()
 	}
 }
 
-const updateWalletById = async (req, res, next) => {
+const updateWalletById = async (req, res) => {
 	const transaction = await sequelize.transaction()
 	try {
 		walletService.setTransaction(transaction)
@@ -131,12 +125,10 @@ const updateWalletById = async (req, res, next) => {
 		await transaction.rollback()
 		walletService.setTransaction(null)
 		req.error = error
-	} finally {
-		next()
 	}
 }
 
-const deleteWalletById = async (req, res, next) => {
+const deleteWalletById = async (req, res) => {
 	const transaction = await sequelize.transaction()
 	try {
 		walletService.setTransaction(transaction)
@@ -158,9 +150,13 @@ const deleteWalletById = async (req, res, next) => {
 		await transaction.rollback()
 		walletService.setTransaction(null)
 		req.error = error
-	} finally {
-		next()
 	}
 }
 
-module.exports = { storeWallet, getPaginationWallets, getWalletById, updateWalletById, deleteWalletById }
+module.exports = {
+	storeWallet,
+	getPaginationWallets,
+	getWalletById,
+	updateWalletById,
+	deleteWalletById
+}

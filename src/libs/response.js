@@ -18,7 +18,7 @@ const debugError = (...props) => {
 }
 
 const successResponse = ({ res, result, message, statusCode = 200 }) => {
-	return res.status(statusCode).json({
+	return res.status(statusCode).send({
 		success: true,
 		message,
 		result,
@@ -29,7 +29,7 @@ const errorResponse = ({ res, error = new InvariantError(), statusCode = 500 }) 
 	const { message, statusCode: code } = error
 
 	debugError(error)
-	return res.status(code || statusCode).json({
+	return res.status(code || statusCode).send({
 		success: false,
 		message,
 	})
