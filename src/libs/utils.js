@@ -1,4 +1,4 @@
-exports.wrapHandler = (...handlers) => {
+const wrapHandler = (...handlers) => {
 	const options = {}
 	if (handlers.length > 1) {
 		options.preHandler = []
@@ -9,4 +9,8 @@ exports.wrapHandler = (...handlers) => {
 	}
 
 	return [options, handlers.slice(-1)[0]]
+}
+
+module.exports = {
+	wrapHandler,
 }
