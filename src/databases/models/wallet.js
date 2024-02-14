@@ -14,6 +14,11 @@ module.exports = (sequelize, DataTypes = DT) => {
         foreignKey: 'userId',
         as: 'user'
       })
+
+      this.hasMany(models.Transaction, {
+        foreignKey: 'walletId',
+        as: 'transactions'
+      })
     }
   }
   Wallet.init({
@@ -26,6 +31,11 @@ module.exports = (sequelize, DataTypes = DT) => {
     name: {
       allowNull: false,
       type: DataTypes.STRING,
+    },
+    balance: {
+      allowNull: false,
+      type: DataTypes.BIGINT,
+      defaultValue: 0,
     },
   }, {
     defaultScope: {
