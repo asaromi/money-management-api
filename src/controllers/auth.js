@@ -1,6 +1,6 @@
 const { sequelize } = require('../databases/models')
 const { hashPassword, comparePassword } = require('../libs/bcrypt')
-const { InvariantError } = require('../libs/exceptions')
+const { InvariantError, NotFoundError } = require('../libs/exceptions')
 const { generateToken } = require('../libs/jwt')
 
 const UserService = require('../services/user')
@@ -8,8 +8,6 @@ const { debug } = require('../libs/response')
 const userService = new UserService()
 
 const register = async (req, res) => {
-	const transaction = await sequelize.transaction()
-
 	try {
 		userService.setTransaction(transaction)
 		if (req.error) throw req.error
@@ -29,7 +27,6 @@ const register = async (req, res) => {
 		const token = await generateToken({ id: user.id })
 		if (!token) throw new InvariantError('Failed to generate token')
 
-		await transaction.commit()
 		req.result = { token }
 		req.statusCode = 201
 	} catch (error) {
@@ -37,8 +34,6 @@ const register = async (req, res) => {
 			error = new InvariantError(error.message)
 		}
 
-		await transaction.rollback()
-		userService.setTransaction(null)
 		req.error = error
 	}
 }
@@ -48,8 +43,8 @@ const login = async (req, res) => {
 		if (req.error) throw req.error
 
 		const { email, password: plainPassword } = req.body
-		const { password, ...user } = await userService.getUserByEmail(email, { isLogin: true, raw: true })
-		if (!user) throw new InvariantError('Invalid email')
+		const { password, ...user } = await userService.getUserByEmail(email, { isLogin: true, raw: true }) || {}
+		if (!password && !user?.id) throw new NotFoundError('User not found')
 
 		const isPasswordMatch = await comparePassword(plainPassword, password)
 		if (!isPasswordMatch) throw new InvariantError('Password does not match')
@@ -83,9 +78,7 @@ const getAuthUser = async (req, res) => {
 }
 
 const resetPassword = async (req, res) => {
-	const transaction = await sequelize.transaction()
 	try {
-		userService.setTransaction(transaction)
 		if (req.error) throw req.error
 
 		const { password: plainPassword } = req.body
@@ -100,8 +93,6 @@ const resetPassword = async (req, res) => {
 			error = new InvariantError(error.message)
 		}
 
-		await transaction.rollback()
-		userService.setTransaction(null)
 		req.error = error
 	}
 }

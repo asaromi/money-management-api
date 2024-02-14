@@ -5,14 +5,11 @@ const CategoryService = require('../services/category')
 const categoryService = new CategoryService()
 
 const storeCategory = async (req, res) => {
-	const transaction = await sequelize.transaction()
 	try {
-		categoryService.setTransaction(transaction)
 		if (req.error) throw req.error
 
 		const category = await categoryService.createCategory(req.body)
 		if (!category) throw new InvariantError('Failed to create category')
-		await transaction.commit()
 
 		req.result = category
 		req.statusCode = 201
@@ -21,7 +18,6 @@ const storeCategory = async (req, res) => {
 			error = new InvariantError(error.message)
 		}
 
-		await transaction.rollback()
 		req.error = error
 	}
 }
@@ -85,9 +81,7 @@ const getCategoryBySlug = async (req, res) => {
 }
 
 const updateCategoryById = async (req, res) => {
-	const transaction = await sequelize.transaction()
 	try {
-		categoryService.setTransaction(transaction)
 		if (req.error) throw req.error
 
 		const { id } = req.params
@@ -95,15 +89,12 @@ const updateCategoryById = async (req, res) => {
 		const [updated] = await categoryService.updateCategoryBy({ query: { id }, data: req.body })
 		if (!updated) throw new InvariantError('Failed to update category')
 
-		await transaction.commit()
 		req.message = 'Category updated successfully'
 	} catch (error) {
 		if (!(error instanceof Error)) {
 			error = new InvariantError(error.message)
 		}
 
-		await transaction.rollback()
-		categoryService.setTransaction(null)
 		req.error = error
 	}
 }
