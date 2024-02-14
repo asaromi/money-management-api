@@ -14,7 +14,7 @@ class WalletService {
 	async createWallet(payload) {
 		const wallet = await this.walletRepository.storeData(payload)
 		if (wallet) {
-			await redisClient.del('wallets')
+			await redisClient.del(`wallets:U-${payload.userId}`)
 		}
 
 		return wallet
@@ -26,7 +26,7 @@ class WalletService {
 		const deletePromises = [this.walletRepository.deleteBy({ query })]
 		if (wallet) {
 			deletePromises.push(redisClient.del(key))
-			deletePromises.push(redisClient.del('wallets'))
+			deletePromises.push(redisClient.del(`wallets:U-${wallet.userId}`))
 		}
 
 		const [deleted] = await Promise.all(deletePromises)
@@ -66,7 +66,7 @@ class WalletService {
 		const updatePromises = [this.walletRepository.updateBy({ query, data })]
 		if (wallet) {
 			updatePromises.push(redisClient.del(key))
-			updatePromises.push(redisClient.del('wallets'))
+			updatePromises.push(redisClient.del(`wallets:U-${wallet.userId}`))
 		}
 
 		const [updated] = await Promise.all(updatePromises)

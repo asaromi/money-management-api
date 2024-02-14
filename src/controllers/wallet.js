@@ -1,21 +1,18 @@
 const { sequelize, Sequelize, Op } = require('../databases/models')
-const { BadRequestError, ForbiddenError, InvariantError } = require('../libs/exceptions')
+const { BadRequestError, ForbiddenError, InvariantError, NotFoundError } = require('../libs/exceptions')
 
 const WalletService = require('../services/wallet')
 const walletService = new WalletService()
 
 const storeWallet = async (req, res) => {
-	const transaction = await sequelize.transaction()
 	try {
-		walletService.setTransaction(transaction)
 		if (req.error) throw req.error
 
 		const { id: userId } = req.user
 		const { name } = req.body
 
 		const wallet = await walletService.createWallet({ userId, name })
-		if (!wallet) throw new InvariantError('Failed to create wallet')
-		await transaction.commit()
+		if (!wallet) throw new BadRequestError('Failed to create wallet')
 
 		req.result = wallet
 		req.statusCode = 201
@@ -24,8 +21,6 @@ const storeWallet = async (req, res) => {
 			error = new InvariantError(error.message)
 		}
 
-		await transaction.rollback()
-		walletService.setTransaction(null)
 		req.error = error
 	}
 }
@@ -37,10 +32,10 @@ const getPaginationWallets = async (req, res) => {
 		const { q: name, limit, page } = req.query
 		const { id: userId } = req.user
 
-		let redisKey = 'wallets'
+		let redisKey = `wallets:U-${userId}`
 		if (name || limit || page) {
 			const queryParams = new URLSearchParams(req.query)
-			redisKey += `:Q-${queryParams.toString()}`
+			redisKey += `_Q-${queryParams.toString()}`
 		}
 
 		const userCondition = { userId }
@@ -90,7 +85,7 @@ const getWalletById = async (req, res) => {
 		])
 
 		if (!wallet && countWalletId > 0) throw new ForbiddenError('You are not authorized to access this wallet')
-		else if (!wallet) throw new InvariantError('Wallet not found')
+		else if (!wallet) throw new NotFoundError('Wallet not found')
 
 		req.result = wallet
 	} catch (error) {
@@ -103,9 +98,7 @@ const getWalletById = async (req, res) => {
 }
 
 const updateWalletById = async (req, res) => {
-	const transaction = await sequelize.transaction()
 	try {
-		walletService.setTransaction(transaction)
 		if (req.error) throw req.error
 
 		const { id } = req.params
@@ -114,7 +107,6 @@ const updateWalletById = async (req, res) => {
 
 		const [walletUpdated] = await walletService.updateWalletBy({ query: { id, userId }, data: { name } })
 		if (!walletUpdated || walletUpdated === 0) throw new BadRequestError('Failed to update wallet')
-		await transaction.commit()
 
 		req.message = 'Wallet updated successfully'
 	} catch (error) {
@@ -122,16 +114,12 @@ const updateWalletById = async (req, res) => {
 			error = new InvariantError(error.message)
 		}
 
-		await transaction.rollback()
-		walletService.setTransaction(null)
 		req.error = error
 	}
 }
 
 const deleteWalletById = async (req, res) => {
-	const transaction = await sequelize.transaction()
 	try {
-		walletService.setTransaction(transaction)
 		if (req.error) throw req.error
 
 		const { id } = req.params
@@ -139,7 +127,6 @@ const deleteWalletById = async (req, res) => {
 
 		const deleted = await walletService.deleteWalletBy({ query: { id, userId } })
 		if (!deleted || deleted === 0) throw new BadRequestError('Failed to delete wallet')
-		await transaction.commit()
 
 		req.message = 'Wallet deleted successfully'
 	} catch (error) {
@@ -147,8 +134,6 @@ const deleteWalletById = async (req, res) => {
 			error = new InvariantError(error.message)
 		}
 
-		await transaction.rollback()
-		walletService.setTransaction(null)
 		req.error = error
 	}
 }
