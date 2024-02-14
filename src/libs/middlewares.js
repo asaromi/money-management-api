@@ -1,8 +1,8 @@
+const Joi = require('joi')
 const { AuthError, ForbiddenError, BadRequestError } = require('./exceptions')
 const { verifyToken } = require('./jwt')
 const { errorResponse, debug, successResponse } = require('./response')
 const UserService = require('../services/user')
-const Joi = require('joi')
 
 const userService = new UserService()
 
@@ -19,7 +19,7 @@ const authenticate = async (req, res) => {
 
 		req.user = user
 	} catch (error) {
-		return errorResponse({ res, error })
+		req.error = error
 	}
 }
 
@@ -38,13 +38,28 @@ const validateSchema = (schema = Joi.object(), source = 'body') =>
 	(req, res, next) => {
 		try {
 			const { error } = schema.validate(req[source])
-			if (error) throw error
+			if (error) throw new BadRequestError(error.message)
 		} catch (error) {
-			console.error(error)
-			req.error = new BadRequestError(error.message)
+			req.error = error
 		} finally {
 			next()
 		}
 	}
 
-module.exports = { authenticate, handleResponse, validateSchema }
+const validateAuthSchema = (schema = Joi.object(), source = 'body') =>
+	(req, res, next) => {
+		try {
+			const { id: userId } = req.user
+			if (!userId) throw new AuthError('Cannot validate user')
+
+			req[source].userId = userId
+			const { error } = schema.validate(req[source])
+			if (error) throw new BadRequestError(error.message)
+		} catch (error) {
+			req.error = error
+		} finally {
+			next()
+		}
+	}
+
+module.exports = { authenticate, handleResponse, validateSchema, validateAuthSchema }

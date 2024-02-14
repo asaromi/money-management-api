@@ -1,12 +1,12 @@
-const { wrapHandler } = require('../libs/formatter')
-const { authenticate, handleResponse, validateSchema } = require('../libs/middlewares')
+const { wrapHandler } = require('../libs/utils')
+const { authenticate, handleResponse, validateAuthSchema } = require('../libs/middlewares')
 const { createOrUpdateSchema } = require('../validators/wallet')
 const { getPaginationWallets, storeWallet, getWalletById, updateWalletById, deleteWalletById } = require('../controllers/wallet')
 
 const walletRouter = (fastify, options, done) => {
 	fastify.post('/', ...wrapHandler(
 		authenticate,
-		validateSchema(createOrUpdateSchema),
+		validateAuthSchema(createOrUpdateSchema),
 		storeWallet,
 		handleResponse
 	))
@@ -22,7 +22,7 @@ const walletRouter = (fastify, options, done) => {
 	))
 	fastify.put('/:id', ...wrapHandler(
 		authenticate,
-		validateSchema(createOrUpdateSchema),
+		validateAuthSchema(createOrUpdateSchema),
 		updateWalletById,
 		handleResponse
 	))
