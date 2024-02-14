@@ -1,6 +1,5 @@
 const { getPaginationCategories, storeCategory } = require('../controllers/category')
-const { handleResponse, authenticate, validateSchema } = require('../libs/middlewares')
-const { wrapHandler } = require('../libs/utils')
+const { handleResponse, authenticate, validateSchema, wrapHandler } = require('../libs/middlewares')
 const { createSchema } = require('../validators/category')
 
 const categoryRouter = (fastify, options, done) => {

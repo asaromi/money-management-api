@@ -1,7 +1,6 @@
 const { getAuthUser, login, register, resetPassword } = require('../controllers/auth')
-const { authenticate, handleResponse, validateSchema } = require('../libs/middlewares')
+const { authenticate, handleResponse, validateSchema, wrapHandler } = require('../libs/middlewares')
 const { createSchema: createUserSchema, resetPasswordSchema } = require('../validators/user')
-const { wrapHandler } = require('../libs/utils')
 
 const authRouters = (fastify, options, done) => {
 	fastify.get('/', ...wrapHandler(

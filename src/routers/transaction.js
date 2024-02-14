@@ -1,5 +1,4 @@
-const { wrapHandler } = require('../libs/utils')
-const { handleResponse, authenticate, validateAuthSchema } = require('../libs/middlewares')
+const { handleResponse, authenticate, validateAuthSchema, wrapHandler } = require('../libs/middlewares')
 const { getPaginationTransactions, storeTransaction, getTransactionById } = require('../controllers/transaction')
 const { createOrUpdateSchema } = require('../validators/transaction')
 
