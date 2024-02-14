@@ -18,9 +18,11 @@ const sequelize = new Sequelize(...payload)
 const Category = require('./category')(sequelize, DataTypes)
 const User = require('./user')(sequelize, DataTypes)
 const Wallet = require('./wallet')(sequelize, DataTypes)
+const Transaction = require('./transaction')(sequelize, DataTypes)
 db.Category = Category
 db.User = User
 db.Wallet = Wallet
+db.Transaction = Transaction
 
 Object.keys(db).forEach(modelName => {
 	if (db[modelName].associate) {
