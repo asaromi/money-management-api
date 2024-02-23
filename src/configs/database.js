@@ -1,5 +1,5 @@
 require('dotenv').config()
-const { DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT, DB_DIALECT = 'mysql' } = process.env
+const { DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT, DB_DIALECT = 'postgres' } = process.env
 
 exports.development = {
 	username: DB_USER,
