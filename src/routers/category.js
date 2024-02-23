@@ -1,4 +1,4 @@
-const { getPaginationCategories, storeCategory } = require('../controllers/category')
+const { getPaginationCategories, storeCategory, getCategoryBySlug } = require('../controllers/category')
 const { handleResponse, authenticate, validateSchema, wrapHandler } = require('../libs/middlewares')
 const { createSchema } = require('../validators/category')
 
@@ -8,7 +8,7 @@ const categoryRouter = (fastify, options, done) => {
 		handleResponse
 	))
 	fastify.get('/:slug', ...wrapHandler(
-		getPaginationCategories,
+		getCategoryBySlug,
 		handleResponse
 	))
 	fastify.post('/', ...wrapHandler(

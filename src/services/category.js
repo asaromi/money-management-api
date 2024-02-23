@@ -1,6 +1,7 @@
 const { redisClient } = require('../configs/redis')
 const { InvariantError } = require('../libs/exceptions')
 const CategoryRepository = require('../repositories/category')
+const { debug } = require('../libs/response')
 
 class CategoryService {
 	constructor(transaction) {
@@ -20,12 +21,19 @@ class CategoryService {
 		return category
 	}
 
+	async countCategories({ query }) {
+		return this.categoryRepository.countBy({ query })
+	}
+
 	async deleteCategoryBy({ query }) {
-		const category = await this.getCategoryBy({ query, options: { raw: true } })
-		const redisKey = `categories:C-${category.slug}`
+		const category = await this.countCategories({ query })
+		if (!category) return 0
+
+		const isRedisConnected = redisClient.options.enableReadyCheck && redisClient.status === 'ready'
+		const redisKey = `categories:C-${query?.slug}`
 
 		const deletePromises = [this.categoryRepository.deleteBy({ query })]
-		if (category && query?.slug) {
+		if (isRedisConnected) {
 			deletePromises.push(redisClient.del(redisKey))
 			deletePromises.push(redisClient.del('categories'))
 		}
@@ -36,6 +44,7 @@ class CategoryService {
 
 	async getCategoryBy({ query, options = {} }) {
 		const redisKey = `categories:C-${query.slug}`
+
 		const cached = await redisClient.get(redisKey)
 		if (cached) {
 			return JSON.parse(cached)
@@ -51,6 +60,7 @@ class CategoryService {
 
 	async getAndCountCategories({ query, options, redisKey }) {
 		if (!redisKey) throw new InvariantError('Redis key is required')
+		debug('Redis key:', redisKey)
 
 		const cached = await redisClient.get(redisKey)
 		if (cached) {
