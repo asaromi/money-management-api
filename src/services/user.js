@@ -15,19 +15,39 @@ class UserService {
 		return this.userRepository.storeData(payload)
 	}
 
+	async deleteUserBy({ query }) {
+		const isRedisConnected = redisClient.options.enableReadyCheck && redisClient.status === 'ready'
+		const user = await this.getUserBy({ query })
+		const key = `users:U-${user.id}`
+
+		const deletePromises = [this.userRepository.deleteBy({ query })]
+		if (user && isRedisConnected) {
+			deletePromises.push(redisClient.del(key))
+		}
+
+		const [deleted] = await Promise.all(deletePromises)
+		return deleted
+	}
+
 	async getUserBy({ query, options }) {
 		let redisKey = 'users'
 		if (query.email) redisKey += `:E-${query.email}`
-		if (query.id) redisKey += `:U-${query.id}`
+		else if (query.id) redisKey += `:U-${query.id}`
+		const isRedisConnected = redisClient.options.enableReadyCheck && redisClient.status === 'ready'
 
-		const cached = await redisClient.get(redisKey)
-		if (cached) {
-			return JSON.parse(cached)
+		if (isRedisConnected) {
+			const cached = await redisClient.get(redisKey)
+			if (cached) {
+				return JSON.parse(cached)
+			}
+		} else {
+			debug('Redis client is not connected')
 		}
+
 
 		const newOptions = this.generateOptions(options)
 		const user = await this.userRepository.getBy({ query, options: newOptions })
-		if (user) {
+		if (isRedisConnected && user) {
 			await redisClient.set(redisKey, JSON.stringify(user), { 'EX': 300 })
 		}
 

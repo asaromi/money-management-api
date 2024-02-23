@@ -9,7 +9,6 @@ const userService = new UserService()
 
 const register = async (req, res) => {
 	try {
-		userService.setTransaction(transaction)
 		if (req.error) throw req.error
 
 		debug('Registering user', req.body)

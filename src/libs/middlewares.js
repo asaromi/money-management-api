@@ -19,7 +19,7 @@ const authenticate = async (req, res) => {
 
 		req.user = user
 	} catch (error) {
-		req.error = error
+		req.error = new AuthError(error?.message || 'Failed to authenticate user')
 	}
 }
 
@@ -64,6 +64,7 @@ const validateAuthSchema = (schema = Joi.object(), source = 'body') =>
 
 const wrapHandler = (...handlers) => {
 	const options = {}
+	const [handler] = handlers.slice(-1)
 	if (handlers.length > 1) {
 		options.preHandler = []
 
@@ -72,7 +73,7 @@ const wrapHandler = (...handlers) => {
 		}
 	}
 
-	return [options, handlers.slice(-1)[0]]
+	return [options, handler]
 }
 
 module.exports = { authenticate, handleResponse, validateSchema, validateAuthSchema, wrapHandler }
