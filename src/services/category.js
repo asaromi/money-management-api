@@ -1,4 +1,4 @@
-const { redisClient } = require('../configs/redis')
+const { setCache, getCache, destroyCache, isCacheConnected } = require('../libs/redis')
 const { InvariantError } = require('../libs/exceptions')
 const CategoryRepository = require('../repositories/category')
 const { debug } = require('../libs/response')
@@ -15,7 +15,7 @@ class CategoryService {
 
 		const category = await this.categoryRepository.storeData(payload)
 		if (category) {
-			await redisClient.del('categories')
+			await destroyCache('categories')
 		}
 
 		return category
@@ -28,14 +28,12 @@ class CategoryService {
 	async deleteCategoryBy({ query }) {
 		const category = await this.countCategories({ query })
 		if (!category) return 0
-
-		const isRedisConnected = redisClient.options.enableReadyCheck && redisClient.status === 'ready'
 		const redisKey = `categories:C-${query?.slug}`
 
 		const deletePromises = [this.categoryRepository.deleteBy({ query })]
-		if (isRedisConnected) {
-			deletePromises.push(redisClient.del(redisKey))
-			deletePromises.push(redisClient.del('categories'))
+		if (isCacheConnected) {
+			deletePromises.push(destroyCache(redisKey))
+			deletePromises.push(destroyCache('categories'))
 		}
 
 		const [deleted] = await Promise.all(deletePromises)
@@ -45,14 +43,14 @@ class CategoryService {
 	async getCategoryBy({ query, options = {} }) {
 		const redisKey = `categories:C-${query.slug}`
 
-		const cached = await redisClient.get(redisKey)
+		const cached = await getCache(redisKey)
 		if (cached) {
-			return JSON.parse(cached)
+			return cached
 		}
 
 		const category = await this.categoryRepository.getBy({ query, options })
-		if(category) {
-			await redisClient.set(redisKey, JSON.stringify(category), { 'EX': 300 })
+		if (category) {
+			await setCache(redisKey, category)
 		}
 
 		return category
@@ -64,11 +62,11 @@ class CategoryService {
 
 		const cached = await redisClient.get(redisKey)
 		if (cached) {
-			return JSON.parse(cached)
+			return cached
 		}
 
 		const categories = await this.categoryRepository.getPagination({ query, options })
-		await redisClient.set(redisKey, JSON.stringify(categories), { 'EX': 300 })
+		await setCache(redisKey, categories)
 
 		return categories
 	}
@@ -79,8 +77,8 @@ class CategoryService {
 
 		const updatePromises = [this.categoryRepository.updateBy({ query, data })]
 		if (category.slug) {
-			updatePromises.push(redisClient.del(redisKey))
-			updatePromises.push(redisClient.del('categories'))
+			updatePromises.push(destroyCache(redisKey))
+			updatePromises.push(destroyCache('categories'))
 		}
 
 		const [updated] = await Promise.all(updatePromises)

@@ -48,7 +48,8 @@ class UserService {
 		const newOptions = this.generateOptions(options)
 		const user = await this.userRepository.getBy({ query, options: newOptions })
 		if (isRedisConnected && user) {
-			await redisClient.set(redisKey, JSON.stringify(user), { 'EX': 300 })
+			await redisClient.set(redisKey, JSON.stringify(user))
+			await redisClient.expire(redisKey, 300)
 		}
 
 		return user
