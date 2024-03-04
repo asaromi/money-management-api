@@ -23,7 +23,7 @@ module.exports = {
 					},
 				},
 				categoryId: {
-					allowNull: false,
+					allowNull: true,
 					type: Sequelize.STRING(26),
 					references: {
 						model: {
