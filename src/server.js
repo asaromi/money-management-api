@@ -6,7 +6,7 @@ const { debug } = require('./libs/response')
 
 const fastify = require('fastify')()
 
-const host = process.env.HOST || 'localhost'
+const host = process.env.HOST || '0.0.0.0'
 const port = process.env.PORT || 3000
 
 const allowList = ['http://api.portfolio.host', 'http://localhost', 'http://api.postman.host', 'https://money-management-api-a2cf2b144c41.herokuapp.com/']
