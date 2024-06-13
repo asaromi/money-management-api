@@ -1,6 +1,5 @@
 require('dotenv').config({ override: true })
 const cors = require('@fastify/cors')
-const redisClient = require('./configs/redis')
 const { InvariantError } = require('./libs/exceptions')
 const registerRouter = require('./routers')
 const { debug } = require('./libs/response')
@@ -30,12 +29,11 @@ fastify.register(cors, (instance) => {
 	}
 })
 
-// fastify.register(require('fastify-formbody'))
 fastify.register(registerRouter, { prefix: '/api' })
-fastify.register(require('@fastify/redis'), { client: redisClient })
 
 fastify.listen({ port: PORT, host: HOST }, async (err, address) => {
 	if (err) {
+		debug(err)
 		fastify.log.error(err)
 		process.exit(1)
 	}

@@ -6,7 +6,11 @@ const debug = (...props) => {
 		return ''
 	}
 
-	console.log(...props)
+	if (props[0] instanceof Error) {
+		console.error(...props)
+	} else {
+		console.log(...props)
+	}
 }
 
 const debugError = (...props) => {

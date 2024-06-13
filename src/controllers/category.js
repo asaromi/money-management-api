@@ -5,8 +5,11 @@ const CategoryService = require('../services/category')
 const categoryService = new CategoryService()
 
 const storeCategory = async (req, res) => {
+	const transaction = await sequelize.transaction()
 	try {
 		if (req.error) throw req.error
+
+		categoryService.setTransaction(transaction)
 
 		const category = await categoryService.createCategory(req.body)
 		if (!category) throw new InvariantError('Failed to create category')
@@ -81,11 +84,15 @@ const getCategoryBySlug = async (req, res) => {
 }
 
 const updateCategoryById = async (req, res) => {
+	const transaction = await sequelize.transaction()
 	try {
 		if (req.error) throw req.error
 
+		categoryService.setTransaction(transaction)
+
 		const { id } = req.params
 		req.body.slug = req.body.name.toLowerCase().split(' ').join('-')
+
 		const [updated] = await categoryService.updateCategoryBy({ query: { id }, data: req.body })
 		if (!updated) throw new InvariantError('Failed to update category')
 
@@ -102,14 +109,16 @@ const updateCategoryById = async (req, res) => {
 const deleteCategoryById = async (req, res) => {
 	const transaction = await sequelize.transaction()
 	try {
-		categoryService.setTransaction(transaction)
 		if (req.error) throw req.error
 
+		categoryService.setTransaction(transaction)
 		const { id } = req.params
+
 		const category = await categoryService.deleteCategoryBy({ query: { id } })
 		if (!category) throw new InvariantError('Failed to delete category')
 
 		await transaction.commit()
+
 		req.message = 'Category deleted successfully'
 		req.statusCode = 200
 	} catch (error) {

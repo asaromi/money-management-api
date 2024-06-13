@@ -1,6 +1,5 @@
 const UserRepository = require('../repositories/user')
-const { redisClient } = require('../configs/redis')
-const { debug } = require('../libs/response')
+const { InvariantError } = require('../libs/exceptions')
 
 class UserService {
 	constructor(transaction) {
@@ -12,47 +11,19 @@ class UserService {
 	}
 
 	async createUser(payload) {
-		return this.userRepository.storeData(payload)
+		const user = await this.userRepository.storeData(payload)
+		if (!user) throw new InvariantError('Failed to create user')
+
+		return user
 	}
 
 	async deleteUserBy({ query }) {
-		const isRedisConnected = redisClient.options.enableReadyCheck && redisClient.status === 'ready'
-		const user = await this.getUserBy({ query })
-		const key = `users:U-${user.id}`
-
-		const deletePromises = [this.userRepository.deleteBy({ query })]
-		if (user && isRedisConnected) {
-			deletePromises.push(redisClient.del(key))
-		}
-
-		const [deleted] = await Promise.all(deletePromises)
-		return deleted
+		return await this.userRepository.deleteBy({ query })
 	}
 
 	async getUserBy({ query, options }) {
-		let redisKey = 'users'
-		if (query.email) redisKey += `:E-${query.email}`
-		else if (query.id) redisKey += `:U-${query.id}`
-		const isRedisConnected = redisClient.options.enableReadyCheck && redisClient.status === 'ready'
-
-		if (isRedisConnected) {
-			const cached = await redisClient.get(redisKey)
-			if (cached) {
-				return JSON.parse(cached)
-			}
-		} else {
-			debug('Redis client is not connected')
-		}
-
-
 		const newOptions = this.generateOptions(options)
-		const user = await this.userRepository.getBy({ query, options: newOptions })
-		if (isRedisConnected && user) {
-			await redisClient.set(redisKey, JSON.stringify(user))
-			await redisClient.expire(redisKey, 300)
-		}
-
-		return user
+		return await this.userRepository.getBy({ query, options: newOptions })
 	}
 
 	async getUserById(id, options = {}) {
@@ -64,15 +35,6 @@ class UserService {
 	}
 
 	async updateUserBy({ query, data }) {
-		let redisKey = 'users'
-		if (query.email) redisKey += `:E-${query.email}`
-		if (query.id) redisKey += `:U-${query.id}`
-
-		const cached = await redisClient.get(redisKey)
-		if (cached) {
-			await redisClient.del(redisKey)
-		}
-
 		return await this.userRepository.updateBy({ query, data })
 	}
 
@@ -98,7 +60,7 @@ class UserService {
 
 		return newOptions
 	}
-	
+
 	setTransaction(transaction) {
 		this.userRepository.transaction = transaction
 	}

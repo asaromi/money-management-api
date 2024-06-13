@@ -1,7 +1,7 @@
-const { InvariantError, NotFoundError, BadRequestError } = require('../libs/exceptions')
-const { redisClient } = require('../configs/redis')
-const TransactionRepository = require('../repositories/transaction')
+const { Transaction } = require('../databases/models')
 const { debug } = require('../libs/response')
+const { InvariantError, NotFoundError, BadRequestError } = require('../libs/exceptions')
+const TransactionRepository = require('../repositories/transaction')
 
 class TransactionService {
 	constructor() {
@@ -14,73 +14,40 @@ class TransactionService {
 
 	async createTransaction(payload) {
 		const transaction = await this.transactionRepository.storeData(payload)
+		if (!transaction) throw new InvariantError('Failed to create transaction')
 
-		if (!transaction && !payload?.walletId) {
-			throw new InvariantError('Failed to create transaction')
-		}
-
-		await redisClient.del(`transactions:U-${payload.userId}`)
 		return transaction
 	}
 
 	async deleteTransactionBy({ query }) {
-		if (!query.userId) throw new InvariantError('User ID is required')
+		if (!query.userId) throw new BadRequestError('User ID is required')
 
-		const transaction = await this.getTransactionBy({ query })
-		const key = `transactions:T-${transaction.id}`
-		const deletePromises = [this.transactionRepository.deleteBy({ query })]
-		if (transaction) {
-			deletePromises.push(redisClient.del(key))
-			deletePromises.push(redisClient.del(`transactions:U-${transaction.userId}`))
-		}
-
-		const [deleted] = await Promise.all(deletePromises)
-		return deleted
+		return await this.transactionRepository.deleteBy({ query })
 	}
 
-	async getAndCountTransactions({ query, options, redisKey }) {
-		if (!redisKey) throw new InvariantError('Redis key is required')
-
-		const cached = await redisClient.get(redisKey)
-		if (cached) {
-			return JSON.parse(cached)
-		}
-
-		const transactions = await this.transactionRepository.getPagination({ query, options })
-		await redisClient.set(redisKey, JSON.stringify(transactions))
-		await redisClient.expire(redisKey, 300)
-		return transactions
+	async getAndCountTransactions({ query, options }) {
+		return await this.transactionRepository.getPagination({ query, options })
 	}
 
 	async getTransactionBy({ query, options }) {
-		const redisKey = `transactions:T-${query.id}`
-
-		if (options?.raw !== false) {
-			const cached = await redisClient.get(redisKey)
-			if (cached) {
-				debug('cached from redis', cached)
-				return JSON.parse(cached)
-			}
-		}
-
-		const transaction = await this.transactionRepository.getBy({ query, options })
-		if (transaction) {
-			debug('new transaction cached', transaction)
-			await redisClient.set(redisKey, JSON.stringify(transaction))
-			await redisClient.expire(redisKey, 300)
-		}
-
-		return transaction
+		return await this.transactionRepository.getBy({ query, options })
 	}
 
-	async updateTransactionBy({ query, payload }) {
-		const transaction = await this.getTransactionBy({ query, options: { raw: true } })
+	/**
+	 * @typedef {{ counter: [new: number, updated: number], updated: [affectedCount: number, affectedRows: Transaction[]] }} Result
+	 * @param {{ query: Object, payload: Object }}
+	 * @returns Promise<Result>
+	 */
+	async updateTransactionBy({ query, payload, returning = false }) {
+		const transaction = await this.getTransactionBy({ query, options: { raw: true, include: [], } })
 		if (!transaction) {
 			throw new NotFoundError('Transaction not found')
 		}
 
+		let counter = [0, 0] // [old, new]
+		const oldWallet = transaction.walletId
 
-		let counter = 0
+
 		for (const key in payload) {
 			if (transaction[key] === payload[key]) {
 				delete payload[key]
@@ -88,33 +55,30 @@ class TransactionService {
 			}
 
 			if (key === 'amount') {
-				counter = payload[key] - transaction[key]
-				debug('amount', payload[key], transaction[key])
-				debug('counter', counter)
+				counter[0] = payload[key] - transaction[key]
+			}
+
+			if (key === 'walletId' && payload[key] && payload[key] !== transaction[key]) {
+				counter[0] = -transaction.amount
+				counter[1] = Number(payload.amount || transaction.amount)
 			}
 
 			transaction[key] = payload[key]
 		}
 
-		const redisKey = `transactions:T-${query.id}`
-		const [updatedRows] = await Promise.all([
-			this.transactionRepository.updateBy({ query, data: payload }),
-			redisClient.del(redisKey),
-			redisClient.del(`transactions:U-${query.userId}`),
-		])
-
-		if (!updatedRows) {
+		const updatedRows = await this.transactionRepository.updateBy({ query, data: payload, returning })
+		if (!updatedRows[0]) {
 			throw new BadRequestError('Failed to update transaction')
 		}
 
-		debug('counter', counter)
-		debug('updated', transaction)
-		return { counter, updated: transaction }
+		debug('updated transaction', updatedRows[1])
+		return { counter, updated: updatedRows, oldWallet }
 	}
 
 	setTransaction(transaction) {
 		this.transactionRepository.transaction = transaction
 	}
 }
+
 
 module.exports = TransactionService

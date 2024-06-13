@@ -52,6 +52,7 @@ const validateAuthSchema = (schema = Joi.object(), source = 'body') =>
 			const { id: userId } = req.user
 			if (!userId) throw new AuthError('Cannot validate user')
 
+			if (!req.body) req.body = {}
 			req[source].userId = userId
 			const { error } = schema.validate(req[source])
 			if (error) throw new BadRequestError(error.message)
@@ -63,14 +64,9 @@ const validateAuthSchema = (schema = Joi.object(), source = 'body') =>
 	}
 
 const wrapHandler = (...handlers) => {
-	const options = {}
-	const [handler] = handlers.slice(-1)
-	if (handlers.length > 1) {
-		options.preHandler = []
-
-		for (let i = 0; i < handlers.length - 1; i++) {
-			options.preHandler.push(handlers[i])
-		}
+	const [handler, ...preHandler] = [...handlers.slice(-1), ...handlers.slice(0, -1)]
+	const options = {
+		preHandler
 	}
 
 	return [options, handler]

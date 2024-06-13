@@ -1,23 +1,57 @@
 const { Op, sequelize, Category, Wallet } = require('../databases/models')
-const { InvariantError, BadRequestError, NotFoundError } = require('../libs/exceptions')
-const TransactionService = require('../services/transaction')
 const { TRANSACTION_TYPE } = require('../libs/constant')
+const { BadRequestError, InvariantError, NotFoundError } = require('../libs/exceptions')
+const TransactionService = require('../services/transaction')
+const WalletService = require('../services/wallet')
 const { debug } = require('../libs/response')
 
 const transactionService = new TransactionService()
+const walletService = new WalletService()
+
+const detailTransaction = (transaction) => {
+	const amount = Number(transaction.amount)
+	const timestamp = Number(transaction.timestamp)
+	const strAmount = Math.abs(amount).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' })
+	const date = new Date(timestamp).toISOString()
+	const categoryName = transaction?.categoryName || 'Uncategorized'
+
+	return {
+		...transaction,
+		categoryName,
+		amount,
+		strAmount,
+		timestamp,
+		date,
+	}
+}
 
 const storeTransaction = async (req, res) => {
 	const dbTransaction = await sequelize.transaction()
 	try {
 		transactionService.setTransaction(dbTransaction)
+		walletService.setTransaction(dbTransaction)
 		if (req.error) throw req.error
 
-		const { id: userId } = req.user
-		let type = req.body.type
-		if (!type && req.body.amount > 0) type = TRANSACTION_TYPE.INCOME
 
-		const transaction = await transactionService.createTransaction({ ...req.body, userId, type })
+		let { type } = req.body
+		if (!req.body.categoryId && type !== TRANSACTION_TYPE.ADJUST) {
+			throw new BadRequestError('Category ID is required')
+		} else if (!type && req.body.amount > 0) {
+			type = TRANSACTION_TYPE.INCOME
+		}
+
+		const {
+			user: { id: userId },
+			body: { amount: counter, walletId: id }
+		} = req
+		const walletQuery = { userId, id }
+		const [transaction, calculated] = await Promise.all([
+			transactionService.createTransaction({ ...req.body, userId, type }),
+			walletService.recalculateWalletBalance({ query: walletQuery, counter }),
+		])
+
 		if (!transaction) throw new BadRequestError('Failed to create transaction')
+
 		await dbTransaction.commit()
 
 		req.result = transaction
@@ -38,16 +72,23 @@ const getPaginationTransactions = async (req, res) => {
 		if (req.error) throw req.error
 
 		const { id: userId } = req.user
-		const { q: desc, start, end, wallet: walletId, category: categoryId,  page, limit } = req.query
+		const { q: search, start, end, wallet: walletId, category: categoryId, page, limit } = req.query
 
 		let redisKey = `transactions:U-${userId}`
-		if (desc || start || end || walletId || categoryId || limit || page) {
+		if (search || start || end || walletId || categoryId || limit || page) {
 			const queryParams = new URLSearchParams(req.query)
+			debug('queryParams', queryParams.toString())
 			redisKey += `_Q-${queryParams.toString()}`
 		}
 
 		const query = { userId, timestamp: {} }
-		if (desc) query.description = { [Op.like]: `%${desc}%` }
+		if (search) {
+			query[Op.or] = [
+				{ description: { [Op.iLike]: `%${search}%` } },
+				{ '$wallet.name$': { [Op.iLike]: `%${search}%` } },
+				{ '$category.name$': { [Op.iLike]: `%${search}%` } },
+			]
+		}
 
 		if (!start && !end) delete query.timestamp
 		else {
@@ -55,8 +96,10 @@ const getPaginationTransactions = async (req, res) => {
 			if (end) query.timestamp[Op.lte] = end
 		}
 
-		if (walletId) query.walletId = walletId
-		if (categoryId) query.categoryId = categoryId
+		if (walletId) query.walletId = { [Op.in]: walletId.split(',') }
+		if (categoryId) query.categoryId = { [Op.in]: categoryId.split(',') }
+
+		debug('query', query)
 
 		const options = {
 			attributes: [
@@ -82,7 +125,6 @@ const getPaginationTransactions = async (req, res) => {
 					model: Category,
 					as: 'category',
 					attributes: [],
-					required: true,
 				},
 			],
 			order: [
@@ -94,12 +136,7 @@ const getPaginationTransactions = async (req, res) => {
 		}
 
 		const result = await transactionService.getAndCountTransactions({ query, options, redisKey })
-		result.data.forEach((transaction) => {
-			transaction.timestamp = Number(transaction.timestamp)
-			transaction.amount = Number(transaction.amount)
-			transaction.date = new Date(transaction.timestamp)
-			transaction.strAmount = transaction.amount.toLocaleString('id-ID', { style: 'currency', currency: 'IDR' })
-		})
+		result.data = result.data.map(detailTransaction)
 
 		req.result = result
 	} catch (error) {
@@ -124,34 +161,30 @@ const getTransactionById = async (req, res) => {
 				'type',
 				'timestamp',
 				'categoryId',
-				'walletId',
 				[sequelize.col('wallet.name'), 'walletName'],
+				'walletId',
 				[sequelize.col('category.name'), 'categoryName'],
 			],
 			raw: true,
 			include: [
 				{
 					model: Wallet,
-					attributes: ['id', 'name'],
+					as: 'wallet',
+					attributes: [],
 					required: true,
 				},
 				{
 					model: Category,
-					attributes: ['id', 'name'],
-					required: true,
+					as: 'category',
+					attributes: [],
 				},
 			],
 		}
 
-		const redisKey = `transaction:T-${req.params.id}_U-${req.user.id}`
-		let transaction = await transactionService.getTransactionBy({ query, options, redisKey })
+		let transaction = await transactionService.getTransactionBy({ query, options })
 		if (!transaction) throw new NotFoundError('Transaction not found')
 
-		transaction.timestamp = Number(transaction.timestamp)
-		transaction.amount = Number(transaction.amount)
-		transaction.date = new Date(transaction.timestamp)
-		transaction.strAmount = transaction.amount.toLocaleString('id-ID', { style: 'currency', currency: 'IDR' })
-		req.result = transaction
+		req.result = detailTransaction(transaction)
 	} catch (error) {
 		if (!(error instanceof Error)) {
 			error = new InvariantError(error.message)
@@ -161,4 +194,63 @@ const getTransactionById = async (req, res) => {
 	}
 }
 
-module.exports = { storeTransaction, getPaginationTransactions, getTransactionById }
+const updateTransactionById = async (req, res) => {
+	const dbTransaction = await sequelize.transaction()
+	try {
+		transactionService.setTransaction(dbTransaction)
+		walletService.setTransaction(dbTransaction)
+
+		if (req.error) throw req.error
+
+		const {
+			user: { id: userId },
+			params: { id },
+			body: { walletId }
+		} = req
+
+		const query = { id, userId }
+		const { counter, updated: [_, transaction], oldWallet } = await transactionService.updateTransactionBy({
+			query,
+			payload: req.body,
+			returning: true
+		})
+
+		if (!transaction) throw new BadRequestError('Failed to update transaction')
+
+		const promiseAffectedWallets = []
+		if (counter[0] !== 0) {
+			const walletQuery = { userId, id: oldWallet }
+			promiseAffectedWallets.push(
+				walletService.recalculateWalletBalance({ query: walletQuery, counter: counter[0] })
+			)
+		}
+		if (counter[1] !== 0) {
+			const walletQuery = { userId, id: transaction[0].walletId }
+			promiseAffectedWallets.push(
+				walletService.recalculateWalletBalance({ query: walletQuery, counter: counter[1] })
+			)
+		}
+
+		await Promise.all(promiseAffectedWallets)
+		await dbTransaction.commit()
+
+		req.result = transaction
+	} catch (error) {
+		if (!(error instanceof Error)) {
+			error = new InvariantError(error.message)
+		}
+
+		await dbTransaction.rollback()
+		req.error = error
+	} finally {
+		transactionService.setTransaction(null)
+		walletService.setTransaction(null)
+	}
+}
+
+module.exports = {
+	storeTransaction,
+	getPaginationTransactions,
+	getTransactionById,
+	updateTransactionById
+}

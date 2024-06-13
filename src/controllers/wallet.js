@@ -1,8 +1,22 @@
 const { sequelize, Sequelize, Op } = require('../databases/models')
 const { BadRequestError, ForbiddenError, InvariantError, NotFoundError } = require('../libs/exceptions')
-
+const TransactionService = require('../services/transaction')
 const WalletService = require('../services/wallet')
+const { debug } = require('../libs/response')
+
 const walletService = new WalletService()
+const transactionService = new TransactionService()
+
+const simpleWallet = (wallet) => {
+	const balance = Number(wallet.balance)
+	return {
+		id: wallet.id,
+		name: wallet.name,
+		balance,
+		strBalance: balance.toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }),
+		updatedAt: wallet.updatedAt
+	}
+}
 
 const storeWallet = async (req, res) => {
 	try {
@@ -29,14 +43,16 @@ const getPaginationWallets = async (req, res) => {
 	try {
 		if (req.error) throw req.error
 
-		const { q: name, limit, page } = req.query
+		const { q: name, limit = '5', page = '1' } = req.query
 		const { id: userId } = req.user
 
 		let redisKey = `wallets:U-${userId}`
-		if (name || limit || page) {
+		if (name || limit !== '5' || page !== '1') {
 			const queryParams = new URLSearchParams(req.query)
 			redisKey += `_Q-${queryParams.toString()}`
 		}
+
+		debug('redisKey', redisKey)
 
 		const userCondition = { userId }
 		let query = userCondition
@@ -45,7 +61,7 @@ const getPaginationWallets = async (req, res) => {
 			query = {
 				[Op.and]: [
 					Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('name')), {
-						[Op.like]: `%${name.toLowerCase()}%`,
+						[Op.iLike]: `%${name.toLowerCase()}%`,
 					}),
 					userCondition,
 				],
@@ -53,7 +69,7 @@ const getPaginationWallets = async (req, res) => {
 		}
 
 		const options = {
-			attributes: ['id', 'name', 'updatedAt'],
+			attributes: ['id', 'name', 'balance', 'updatedAt'],
 			order: [
 				['updatedAt', 'DESC'],
 				['id', 'ASC'],
@@ -62,7 +78,11 @@ const getPaginationWallets = async (req, res) => {
 			page,
 		}
 
-		req.result = await walletService.getAndCountWallets({ query, options, redisKey })
+		const result = await walletService.getAndCountWallets({ query, options, redisKey })
+		req.result = {
+			...result,
+			data: result.data.map(simpleWallet),
+		}
 	} catch (error) {
 		if (!(error instanceof Error)) {
 			error = new InvariantError(error.message)
@@ -76,18 +96,31 @@ const getWalletById = async (req, res) => {
 	try {
 		if (req.error) throw req.error
 
-		const { id } = req.params
-		const { id: userId } = req.user
+		const { params: { id }, user: { id: userId } } = req
 
-		const [wallet, countWalletId] = await Promise.all([
-			walletService.getWalletBy({ query: { id, userId } }),
-			walletService.countWallets({ query: { id } })
+		const transactionOptions = {
+			limit: 5,
+			order: [['id', 'DESC']],
+		}
+
+		const [wallet, countWalletId, transactions] = await Promise.all([
+			walletService.getWalletBy({ query: { id, userId }, options: { raw: true } }),
+			walletService.countWallets({ query: { id } }),
+			transactionService.getAndCountTransactions({
+				query: { userId, walletId: id },
+				options: transactionOptions,
+				redisKey: `transactions:U-${userId}_W-${id}`
+			})
 		])
 
 		if (!wallet && countWalletId > 0) throw new ForbiddenError('You are not authorized to access this wallet')
 		else if (!wallet) throw new NotFoundError('Wallet not found')
 
-		req.result = wallet
+		req.result = {
+			...wallet,
+			totalTransactions: transactions?.pagination?.total || 0,
+			transactions: transactions
+		}
 	} catch (error) {
 		if (!(error instanceof Error)) {
 			error = new InvariantError(error.message)
@@ -124,6 +157,17 @@ const deleteWalletById = async (req, res) => {
 
 		const { id } = req.params
 		const { id: userId } = req.user
+
+		const [isExistWallet, countTransactions] = await Promise.all([
+			walletService.getWalletBy({ query: { id, userId }, options: { raw: true } }),
+			transactionService.countTransactions({ query: { walletId: id } })
+		])
+
+		if (!isExistWallet) throw new NotFoundError('Wallet not found')
+		if (countTransactions > 0) {
+			const deleted = await transactionService.deleteTransactionBy({ query: { walletId: id } })
+			if (!deleted || deleted === 0) throw new BadRequestError('Failed to delete transactions')
+		}
 
 		const deleted = await walletService.deleteWalletBy({ query: { id, userId } })
 		if (!deleted || deleted === 0) throw new BadRequestError('Failed to delete wallet')

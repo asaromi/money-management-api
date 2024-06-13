@@ -1,6 +1,5 @@
-const { destroyCache, getCache, setCache } = require('../libs/redis')
-const { InvariantError, NotFoundError } = require('../libs/exceptions')
-
+const { InvariantError, NotFoundError, BadRequestError } = require('../libs/exceptions')
+const { debug } = require('../libs/response')
 const WalletRepository = require('../repositories/wallet')
 
 class WalletService {
@@ -10,10 +9,12 @@ class WalletService {
 
 	async recalculateWalletBalance({ query, counter }) {
 		let success = false
-		if (!query.userId) throw new InvariantError('User ID is required')
+		if (!query.userId) throw new BadRequestError('User ID is required')
 
 		const wallet = await this.getWalletBy({ query })
 		if (!wallet) throw new NotFoundError('Wallet not found')
+
+		debug('Recalculating wallet balance by', counter)
 
 		const redisKey = `wallets:W-${wallet.id}`
 		const promises = [this.walletRepository.adjustBalanceBy({ query, counter }).then(() => success = true)]
@@ -32,26 +33,15 @@ class WalletService {
 	
 	async createWallet(payload) {
 		const wallet = await this.walletRepository.storeData(payload)
-		if (wallet) {
-			await destroyCache(`wallets:U-${payload.userId}`)
-		}
+		if (!wallet) throw new InvariantError('Failed to create wallet')
 
 		return wallet
 	}
 
 	async deleteWalletBy({ query }) {
-		if (!query.userId) throw new InvariantError('User ID is required')
+		if (!query.userId) throw new BadRequestError('User ID is required')
 
-		const wallet = await this.getWalletBy({ query })
-		const key = `wallets:W-${wallet.id}`
-		const deletePromises = [this.walletRepository.deleteBy({ query })]
-		if (wallet) {
-			deletePromises.push(destroyCache(key))
-			deletePromises.push(destroyCache(`wallets:U-${wallet.userId}`))
-		}
-
-		const [deleted] = await Promise.all(deletePromises)
-		return deleted
+		return await this.walletRepository.deleteBy({ query })
 	}
 	
 	async getAndCountWallets({ query, options, redisKey }) {
