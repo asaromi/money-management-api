@@ -4,10 +4,12 @@ const { InvariantError } = require('./libs/exceptions')
 const registerRouter = require('./routers')
 const { debug } = require('./libs/response')
 
-const { HOST = 'localhost', PORT } = process.env
 const fastify = require('fastify')()
-const allowList = ['http://api.portfolio.host', 'http://localhost']
 
+const host = process.env.HOST || 'localhost'
+const port = process.env.PORT || 3000
+
+const allowList = ['http://api.portfolio.host', 'http://localhost', 'http://api.postman.host', 'https://money-management-api-a2cf2b144c41.herokuapp.com/']
 fastify.register(cors, (instance) => {
 	return (req, callback) => {
 		let error = null
@@ -31,7 +33,7 @@ fastify.register(cors, (instance) => {
 
 fastify.register(registerRouter, { prefix: '/api' })
 
-fastify.listen({ port: PORT || process.env.PORT, host: HOST }, async (err, address) => {
+fastify.listen({ port, host }, async (err, address) => {
 	if (err) {
 		debug(err)
 		fastify.log.error(err)
