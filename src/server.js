@@ -4,7 +4,7 @@ const { InvariantError } = require('./libs/exceptions')
 const registerRouter = require('./routers')
 const { debug } = require('./libs/response')
 
-const { HOST = 'localhost', PORT = 3000 } = process.env
+const { HOST = 'localhost', PORT = process.env.PORT || 3000 } = process.env
 const fastify = require('fastify')()
 const allowList = ['http://api.portfolio.host', 'http://localhost']
 
