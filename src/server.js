@@ -4,7 +4,7 @@ const { InvariantError } = require('./libs/exceptions')
 const registerRouter = require('./routers')
 const { debug } = require('./libs/response')
 
-const { HOST = 'localhost', PORT = process.env.PORT || 3000 } = process.env
+const { HOST = 'localhost', PORT } = process.env
 const fastify = require('fastify')()
 const allowList = ['http://api.portfolio.host', 'http://localhost']
 
@@ -31,7 +31,7 @@ fastify.register(cors, (instance) => {
 
 fastify.register(registerRouter, { prefix: '/api' })
 
-fastify.listen({ port: PORT, host: HOST }, async (err, address) => {
+fastify.listen({ port: PORT || process.env.PORT, host: HOST }, async (err, address) => {
 	if (err) {
 		debug(err)
 		fastify.log.error(err)
