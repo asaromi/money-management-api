@@ -1,5 +1,15 @@
 const Joi = require('joi')
 
+const changePasswordSchema = Joi.object({
+	password: Joi.string().required(),
+	confirmPassword: Joi.string().required().valid(Joi.ref('password'))
+		.options({
+			messages: {
+				'any.only': '"confirmPassword": does not match with "password"',
+			},
+		}),
+})
+
 const createSchema = Joi.object({
 	name: Joi.string().required(),
 	email: Joi.string().email().required(),
@@ -14,13 +24,7 @@ const createSchema = Joi.object({
 })
 
 const resetPasswordSchema = Joi.object({
-	password: Joi.string().required(),
-	confirmPassword: Joi.string().required().valid(Joi.ref('password'))
-		.options({
-			messages: {
-				'any.only': '"confirmPassword": does not match with "password"',
-			},
-		}),
+	email: Joi.string().email().required(),
 })
 
-module.exports = { createSchema, resetPasswordSchema }
+module.exports = { changePasswordSchema, createSchema, resetPasswordSchema }

@@ -2,6 +2,7 @@ const { sequelize, Op, Sequelize } = require('../databases/models')
 const { InvariantError } = require('../libs/exceptions')
 
 const CategoryService = require('../services/category')
+const { resultSuccess, catchError } = require('../libs/helpers')
 const categoryService = new CategoryService()
 
 const storeCategory = async (req, res) => {
@@ -14,26 +15,17 @@ const storeCategory = async (req, res) => {
 		const category = await categoryService.createCategory(req.body)
 		if (!category) throw new InvariantError('Failed to create category')
 
-		req.result = category
-		req.statusCode = 201
+		await transaction.commit()
+		resultSuccess(req, category, 201)
 	} catch (error) {
-		if (!(error instanceof Error)) {
-			error = new InvariantError(error.message)
-		}
-
-		req.error = error
+		await transaction.rollback()
+		catchError(req, error)
 	}
 }
 
 const getPaginationCategories = async (req, res) => {
 	try {
 		const { q: name, limit, page } = req.query
-
-		let redisKey = 'categories'
-		if (name || limit || page) {
-			const queryParams = new URLSearchParams(req.query)
-			redisKey += `:Q-${queryParams.toString()}`
-		}
 
 		let query
 		const parseName = (name || '').toLowerCase().replaceAll(/ /g, '-')
@@ -43,8 +35,8 @@ const getPaginationCategories = async (req, res) => {
 					Sequelize.where(Sequelize.fn('LOWER', Sequelize.col('name')), {
 						[Op.like]: `%${name.toLowerCase()}%`,
 					}),
-					{ slug: { [Op.like]: `%${parseName}%` } }
-				]
+					{ slug: { [Op.like]: `%${parseName}%` } },
+				],
 			}
 		}
 
@@ -52,17 +44,19 @@ const getPaginationCategories = async (req, res) => {
 			attributes: ['id', 'name', 'slug'],
 			order: [
 				['updatedAt', 'DESC'],
-				['id', 'ASC']
-			]
+				['id', 'ASC'],
+			],
+			limit,
+			page,
 		}
 
-		req.result = await categoryService.getAndCountCategories({ query, options, redisKey })
+		const result = await categoryService.getAndCountCategories({
+			query,
+			options,
+		})
+		resultSuccess(req, result)
 	} catch (error) {
-		if (!(error instanceof Error)) {
-			error = new InvariantError(error.message)
-		}
-
-		req.error = error
+		catchError(req, error)
 	}
 }
 
@@ -73,13 +67,9 @@ const getCategoryBySlug = async (req, res) => {
 		const category = await categoryService.getCategoryBy({ query: { slug } })
 		if (!category) throw new InvariantError('Category not found')
 
-		req.result = category
+		resultSuccess(req, category)
 	} catch (error) {
-		if (!(error instanceof Error)) {
-			error = new InvariantError(error.message)
-		}
-
-		req.error = error
+		catchError(req, error)
 	}
 }
 
@@ -93,16 +83,19 @@ const updateCategoryById = async (req, res) => {
 		const { id } = req.params
 		req.body.slug = req.body.name.toLowerCase().split(' ').join('-')
 
-		const [updated] = await categoryService.updateCategoryBy({ query: { id }, data: req.body })
+		const [updated] = await categoryService.updateCategoryBy({
+			query: { id },
+			data: req.body,
+		})
 		if (!updated) throw new InvariantError('Failed to update category')
 
-		req.message = 'Category updated successfully'
+		await transaction.commit()
+		resultSuccess(req, null, 200, 'Category updated successfully')
 	} catch (error) {
-		if (!(error instanceof Error)) {
-			error = new InvariantError(error.message)
-		}
-
-		req.error = error
+		await transaction.rollback()
+		catchError(req, error)
+	} finally {
+		categoryService.setTransaction(null)
 	}
 }
 
@@ -118,18 +111,17 @@ const deleteCategoryById = async (req, res) => {
 		if (!category) throw new InvariantError('Failed to delete category')
 
 		await transaction.commit()
-
-		req.message = 'Category deleted successfully'
-		req.statusCode = 200
+		resultSuccess(req, null, 200, 'Category deleted successfully')
 	} catch (error) {
-		if (!(error instanceof Error)) {
-			error = new InvariantError(error.message)
-		}
-
 		await transaction.rollback()
-		categoryService.setTransaction(null)
-		req.error = error
+		catchError(req, error)
 	}
 }
 
-module.exports = { deleteCategoryById, getCategoryBySlug, getPaginationCategories, storeCategory, updateCategoryById }
+module.exports = {
+	deleteCategoryById,
+	getCategoryBySlug,
+	getPaginationCategories,
+	storeCategory,
+	updateCategoryById,
+}
