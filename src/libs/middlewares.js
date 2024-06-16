@@ -1,14 +1,14 @@
 const Joi = require('joi')
-const { AuthError, ForbiddenError, BadRequestError } = require('./exceptions')
+const { AuthError, ForbiddenError, BadRequestError, NotFoundError } = require('./exceptions')
 const { verifyToken } = require('./jwt')
-const { errorResponse, debug, successResponse } = require('./response')
+const { errorResponse, debug, successResponse, Response } = require('./response')
 const UserService = require('../services/user')
 
 const userService = new UserService()
 
-const authenticate = async (req, res) => {
+const authenticate = async (req, _res) => {
 	try {
-		const { authorization } = req.headers
+		const authorization = req.headers.authorization || req.params.token
 		if (!authorization) throw new AuthError('Token not found')
 
 		const [type, token] = authorization.split(' ')
@@ -23,15 +23,17 @@ const authenticate = async (req, res) => {
 	}
 }
 
-const handleResponse = (req, res) => {
+const responseHandler = (req, res, payload, done) => {
 	const { error, result, statusCode: code } = req
-	let message = !req.message && !result && 'Hello World!' || req.message
+	let message = req?.message || (!result || 'Hello, Welcome to the Developer World!')
+	payload = new Response({ res, error, message, result, statusCode: code })
 
-	if (error instanceof Error) {
-		return errorResponse({ res, error: req.error })
-	}
+	done(error || null, JSON.stringify(payload))
+}
 
-	return successResponse({ res, message, statusCode: code || 200, result })
+const notFoundHandler = (req, res) => {
+	const payload = errorResponse(new NotFoundError(`[${req.method}] Route ${req.url} Not Found`))
+	return res.code(404).send(payload)
 }
 
 const validateSchema = (schema = Joi.object(), source = 'body') =>
@@ -65,11 +67,16 @@ const validateAuthSchema = (schema = Joi.object(), source = 'body') =>
 
 const wrapHandler = (...handlers) => {
 	const [handler, ...preHandler] = [...handlers.slice(-1), ...handlers.slice(0, -1)]
-	const options = {
-		preHandler
-	}
+	const options = { preHandler }
 
 	return [options, handler]
 }
 
-module.exports = { authenticate, handleResponse, validateSchema, validateAuthSchema, wrapHandler }
+module.exports = {
+	authenticate,
+	responseHandler,
+	notFoundHandler,
+	validateSchema,
+	validateAuthSchema,
+	wrapHandler,
+}

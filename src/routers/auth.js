@@ -1,27 +1,41 @@
-const { getAuthUser, login, register, resetPassword } = require('../controllers/auth')
-const { authenticate, handleResponse, validateSchema, wrapHandler } = require('../libs/middlewares')
-const { createSchema: createUserSchema, resetPasswordSchema } = require('../validators/user')
+const {
+	changePassword,
+	getAuthUser,
+	generateTokenResetPassword,
+	login,
+	register,
+} = require('../controllers/auth')
+const {
+	authenticate,
+	validateSchema,
+	wrapHandler,
+} = require('../libs/middlewares')
+const {
+	changePasswordSchema,
+	createSchema: createUserSchema,
+	resetPasswordSchema,
+} = require('../validators/user')
 
 const authRouters = (fastify, options, done) => {
 	fastify.get('/', ...wrapHandler(
 		authenticate,
 		getAuthUser,
-		handleResponse
 	))
 	fastify.post('/login', ...wrapHandler(
 		login,
-		handleResponse
 	))
 	fastify.post('/register', ...wrapHandler(
 		validateSchema(createUserSchema),
 		register,
-		handleResponse
 	))
-	fastify.patch('/reset-password', ...wrapHandler(
+	fastify.patch('/change-password/:token', ...wrapHandler(
 		authenticate,
+		validateSchema(changePasswordSchema),
+		changePassword,
+	))
+	fastify.get('/reset-password', ...wrapHandler(
 		validateSchema(resetPasswordSchema),
-		resetPassword,
-		handleResponse
+		generateTokenResetPassword,
 	))
 
 	done()

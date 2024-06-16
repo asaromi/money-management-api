@@ -1,21 +1,18 @@
 const { getPaginationCategories, storeCategory, getCategoryBySlug } = require('../controllers/category')
-const { handleResponse, authenticate, validateSchema, wrapHandler } = require('../libs/middlewares')
+const { authenticate, validateSchema, wrapHandler } = require('../libs/middlewares')
 const { createSchema } = require('../validators/category')
 
 const categoryRouter = (fastify, options, done) => {
 	fastify.get('/', ...wrapHandler(
-		getPaginationCategories,
-		handleResponse
+		getPaginationCategories
 	))
 	fastify.get('/:slug', ...wrapHandler(
-		getCategoryBySlug,
-		handleResponse
+		getCategoryBySlug
 	))
 	fastify.post('/', ...wrapHandler(
 		authenticate,
 		validateSchema(createSchema),
-		storeCategory,
-		handleResponse
+		storeCategory
 	))
 
 	done()
