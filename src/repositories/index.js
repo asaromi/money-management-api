@@ -39,11 +39,25 @@ class BaseRepository {
 	}
 
 	async storeData(payload) {
-		return await this.model.create(payload, { transaction: this.transaction })
+		return this.model.create(payload, { transaction: this.transaction })
 	}
 
-	async updateBy({ query, data }){
-		return await this.model.update(data, { where: query, transaction: this.transaction })
+	async updateBy({ query, data, returning = false }){
+		return this.model.update(data, { where: query, returning, transaction: this.transaction })
+	}
+
+	async updateByModel({ model, data }){
+		for (const key in data) {
+			if (model[key] === data[key]) {
+				delete data[key]
+				continue
+			}
+
+			model[key] = data[key]
+		}
+
+		await model.save({ fields: Object.keys(data), transaction: this.transaction })
+		return model.toObject()
 	}
 
 	set transaction(transaction) {

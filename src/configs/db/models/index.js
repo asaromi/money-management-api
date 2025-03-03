@@ -4,7 +4,7 @@ require('dotenv').config()
 const { Sequelize, DataTypes, Op } = require('sequelize')
 const process = require('process')
 const env = process.env.NODE_ENV || 'development'
-const config = require('../../configs/database')[env]
+const config = require('../index')[env]
 const db = {}
 
 const payload = []
@@ -18,9 +18,11 @@ const sequelize = new Sequelize(...payload)
 const Category = require('./category')(sequelize, DataTypes)
 const User = require('./user')(sequelize, DataTypes)
 const Wallet = require('./wallet')(sequelize, DataTypes)
+const Transaction = require('./transaction')(sequelize, DataTypes)
 db.Category = Category
 db.User = User
 db.Wallet = Wallet
+db.Transaction = Transaction
 
 Object.keys(db).forEach(modelName => {
 	if (db[modelName].associate) {

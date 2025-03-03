@@ -1,17 +1,21 @@
-const { Router } = require('express')
-const { handleResponse, validateSchema, authenticate } = require('../libs/middlewares')
-const {	createSchema: createCategorySchema } = require('../validators/category')
-const {	getCategoryBySlug, getPaginationCategories, storeCategory } = require('../controllers/category')
-const router = new Router()
+const { getPaginationCategories, storeCategory, getCategoryBySlug } = require('../controllers/category')
+const { authenticate, validateSchema, wrapHandler } = require('../libs/middlewares')
+const { createSchema } = require('../validators/category')
 
-router.get('/', getPaginationCategories, handleResponse)
-router.get('/:slug', getCategoryBySlug, handleResponse)
-router.post(
-	'/',
-	authenticate,
-	validateSchema(createCategorySchema),
-	storeCategory,
-	handleResponse,
-)
+const categoryRouter = (fastify, options, done) => {
+	fastify.get('/', ...wrapHandler(
+		getPaginationCategories
+	))
+	fastify.get('/:slug', ...wrapHandler(
+		getCategoryBySlug
+	))
+	fastify.post('/', ...wrapHandler(
+		authenticate,
+		validateSchema(createSchema),
+		storeCategory
+	))
 
-module.exports = router
+	done()
+}
+
+module.exports = categoryRouter

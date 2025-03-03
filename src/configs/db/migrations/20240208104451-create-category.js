@@ -2,26 +2,22 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
 	async up(queryInterface, Sequelize) {
-		const transaction = await queryInterface.sequelize.transaction()
 		try {
-			await queryInterface.createTable('users', {
+			await queryInterface.createTable('categories', {
 				id: {
 					allowNull: false,
 					primaryKey: true,
 					type: Sequelize.STRING(26),
 				},
-				email: {
+				name: {
 					allowNull: false,
 					type: Sequelize.STRING,
 					unique: true,
 				},
-				password: {
-					allowNull: false,
-					type: Sequelize.TEXT,
-				},
-				name: {
+				slug: {
 					allowNull: false,
 					type: Sequelize.STRING,
+					unique: true,
 				},
 				createdAt: {
 					allowNull: false,
@@ -35,22 +31,15 @@ module.exports = {
 					allowNull: true,
 					type: Sequelize.DATE,
 				},
-			}, { transaction })
-
-			await transaction.commit()
+			})
 		} catch (error) {
-			await transaction.rollback()
 			throw error
 		}
 	},
 	async down(queryInterface, Sequelize) {
-		const transaction = await queryInterface.sequelize.transaction()
-
 		try {
-			await queryInterface.dropTable('users', { transaction })
-			await transaction.commit()
+			await queryInterface.dropTable('categories')
 		} catch (error) {
-			await transaction.rollback()
 			throw error
 		}
 	},

@@ -1,17 +1,9 @@
 const BaseRepository = require('./index')
-const { Category } = require('../databases/models')
+const { Category } = require('../configs/db/models')
 
 class CategoryRepository extends BaseRepository {
 	constructor(transaction) {
 		super(Category, transaction)
-	}
-
-	async getCategories({ query, options = {} }) {
-		if (query) {
-			options.where = query
-		}
-
-		return await this.model.findAll({ raw: true, ...options })
 	}
 }
 

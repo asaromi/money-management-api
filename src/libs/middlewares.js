@@ -1,14 +1,14 @@
-const { AuthError, ForbiddenError, BadRequestError } = require('./exceptions')
-const { verifyToken } = require('./jwt')
-const { errorResponse, debug, successResponse } = require('./response')
-const UserService = require('../services/user')
 const Joi = require('joi')
+const { AuthError, BadRequestError, NotFoundError } = require('./exceptions')
+const { verifyToken } = require('./jwt')
+const { errorResponse, Response } = require('./response')
+const UserService = require('../services/user')
 
 const userService = new UserService()
 
-const authenticate = async (req, res, next) => {
+const authenticate = async (req, _res) => {
 	try {
-		const { authorization } = req.headers
+		const authorization = req.headers.authorization || req.params.token
 		if (!authorization) throw new AuthError('Token not found')
 
 		const [type, token] = authorization.split(' ')
@@ -18,34 +18,64 @@ const authenticate = async (req, res, next) => {
 		if (!user) throw new AuthError('User not found')
 
 		req.user = user
-		if (next) next()
 	} catch (error) {
-		return errorResponse({ res, error })
+		req.error = new AuthError(error?.message || 'Failed to authenticate user')
 	}
 }
 
-const handleResponse = (req, res) => {
-	const { error, result, statusCode: code } = req
-	let message = !req.message && !result && 'Hello World!' || req.message
+const responseHandler = (req, res, payload, done) => {
+	const { error, message, result, statusCode: code } = req
+	payload = new Response({ res, error, message, result, statusCode: code })
 
-	if (error instanceof Error) {
-		return errorResponse({ res, error: req.error })
-	}
+	done(error || null, JSON.stringify(payload))
+}
 
-	return successResponse({ res, message, statusCode: code || 200, result })
+const notFoundHandler = (req, res) => {
+	const payload = errorResponse(new NotFoundError(`[${req.method}] Route ${req.url} Not Found`))
+	return res.code(404).send(payload)
 }
 
 const validateSchema = (schema = Joi.object(), source = 'body') =>
 	(req, res, next) => {
 		try {
 			const { error } = schema.validate(req[source])
-			if (error) throw error
+			if (error) throw new BadRequestError(error.message)
 		} catch (error) {
-			console.error(error)
-			req.error = new BadRequestError(error.message)
+			req.error = error
 		} finally {
 			next()
 		}
 	}
 
-module.exports = { authenticate, handleResponse, validateSchema }
+const validateAuthSchema = (schema = Joi.object(), source = 'body') =>
+	(req, res, next) => {
+		try {
+			const { id: userId } = req.user
+			if (!userId) throw new AuthError('Cannot validate user')
+
+			if (!req.body) req.body = {}
+			req[source].userId = userId
+			const { error } = schema.validate(req[source])
+			if (error) throw new BadRequestError(error.message)
+		} catch (error) {
+			req.error = error
+		} finally {
+			next()
+		}
+	}
+
+const wrapHandler = (...handlers) => {
+	const [handler, ...preHandler] = [...handlers.slice(-1), ...handlers.slice(0, -1)]
+	const options = { preHandler }
+
+	return [options, handler]
+}
+
+module.exports = {
+	authenticate,
+	responseHandler,
+	notFoundHandler,
+	validateSchema,
+	validateAuthSchema,
+	wrapHandler,
+}

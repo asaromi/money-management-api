@@ -1,5 +1,9 @@
-const { redisClient } = require('../configs/redis')
-const { InvariantError } = require('../libs/exceptions')
+const {
+	InvariantError,
+	NotFoundError,
+	BadRequestError,
+} = require('../libs/exceptions')
+const { debug } = require('../libs/response')
 const WalletRepository = require('../repositories/wallet')
 
 class WalletService {
@@ -7,70 +11,54 @@ class WalletService {
 		this.walletRepository = new WalletRepository()
 	}
 
+	async recalculateWalletBalance({ query, counter }) {
+		let success = false
+		if (!query.userId) throw new BadRequestError('User ID is required')
+
+		const wallet = await this.getWalletBy({ query })
+		if (!wallet) throw new NotFoundError('Wallet not found')
+
+		debug('Recalculating wallet balance by', counter)
+
+		await this.walletRepository.adjustBalanceBy({
+			query,
+			counter,
+		}).then(() => success = true)
+		return success
+	}
+
 	async countWallets({ query }) {
 		return this.walletRepository.countBy({ query })
 	}
-	
+
 	async createWallet(payload) {
 		const wallet = await this.walletRepository.storeData(payload)
-		if (wallet) {
-			await redisClient.del('wallets')
-		}
+		if (!wallet) throw new InvariantError('Failed to create wallet')
 
 		return wallet
 	}
 
 	async deleteWalletBy({ query }) {
-		const wallet = await this.getWalletBy({ query })
-		const key = `wallets:W-${wallet.id}`
-		const deletePromises = [this.walletRepository.deleteBy({ query })]
-		if (wallet) {
-			deletePromises.push(redisClient.del(key))
-			deletePromises.push(redisClient.del('wallets'))
-		}
+		if (!query.userId) throw new BadRequestError('User ID is required')
 
-		const [deleted] = await Promise.all(deletePromises)
-		return deleted
+		return await this.walletRepository.deleteBy({ query })
 	}
-	
-	async getAndCountWallets({ query, options, redisKey }) {
-		if (!redisKey) throw new InvariantError('Redis key is required')
 
-		const cached = await redisClient.get(redisKey)
-		if (cached) {
-			return JSON.parse(cached)
-		}
-
-		const wallets = await this.walletRepository.getPagination({ query, options })
-		await redisClient.set(redisKey, JSON.stringify(wallets), { 'EX': 300 })
-		return wallets
+	async getAndCountWallets({ query, options }) {
+		return await this.walletRepository.getPagination({ query, options })
 	}
 
 	async getWalletBy({ query, options }) {
-		const redisKey = `wallets:W-${query.id}`
-		const cached = await redisClient.get(redisKey)
-		if (cached) {
-			return JSON.parse(cached)
-		}
-
 		const wallet = await this.walletRepository.getBy({ query, options })
-		if (wallet) {
-			await redisClient.set(redisKey, JSON.stringify(wallet), { 'EX': 300 })
-		}
+		if (!wallet) throw new NotFoundError('Wallet not found')
+
 		return wallet
 	}
 
 	async updateWalletBy({ query, data }) {
-		const wallet = await this.getWalletBy({ query })
-		const key = `wallets:W-${wallet.id}`
-		const updatePromises = [this.walletRepository.updateBy({ query, data })]
-		if (wallet) {
-			updatePromises.push(redisClient.del(key))
-			updatePromises.push(redisClient.del('wallets'))
-		}
+		if (!query.userId) throw new BadRequestError('User ID is required')
 
-		const [updated] = await Promise.all(updatePromises)
-		return updated
+		return await this.walletRepository.updateBy({ query, data })
 	}
 
 	setTransaction(transaction) {

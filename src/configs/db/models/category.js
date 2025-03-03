@@ -1,6 +1,6 @@
 'use strict';
 const { DataTypes: DT, Model } = require('sequelize');
-const { generateId } = require('../../libs/ulid')
+const { generateId } = require('../../../libs/ulid')
 module.exports = (sequelize, DataTypes = DT) => {
   class Category extends Model {
     /**

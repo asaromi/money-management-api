@@ -1,5 +1,5 @@
 const BaseRepository = require('./index')
-const { User } = require('../databases/models')
+const { User } = require('../configs/db/models')
 
 class UserRepository extends BaseRepository {
 	constructor(transaction) {

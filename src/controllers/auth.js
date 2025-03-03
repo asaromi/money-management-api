@@ -1,19 +1,19 @@
-const { sequelize } = require('../databases/models')
+const { sequelize } = require('../configs/db/models')
 const { hashPassword, comparePassword } = require('../libs/bcrypt')
-const { InvariantError } = require('../libs/exceptions')
+const { InvariantError, NotFoundError } = require('../libs/exceptions')
+const { resultSuccess, catchError } = require('../libs/helpers')
 const { generateToken } = require('../libs/jwt')
-
-const UserService = require('../services/user')
 const { debug } = require('../libs/response')
+const UserService = require('../services/user')
+
 const userService = new UserService()
 
-const register = async (req, res, next) => {
+const register = async (req, _res) => {
 	const transaction = await sequelize.transaction()
-
 	try {
-		userService.setTransaction(transaction)
 		if (req.error) throw req.error
 
+		userService.setTransaction(transaction)
 		debug('Registering user', req.body)
 
 		const [password, countUser] = await Promise.all([
@@ -30,28 +30,20 @@ const register = async (req, res, next) => {
 		if (!token) throw new InvariantError('Failed to generate token')
 
 		await transaction.commit()
-		req.result = { token }
-		req.statusCode = 201
+		resultSuccess(req, { user, token }, 201)
 	} catch (error) {
-		if (!(error instanceof Error)) {
-			error = new InvariantError(error.message)
-		}
-
 		await transaction.rollback()
-		userService.setTransaction(null)
-		req.error = error
-	} finally {
-		next()
+		catchError(req, error)
 	}
 }
 
-const login = async (req, res, next) => {
+const login = async (req, _res) => {
 	try {
 		if (req.error) throw req.error
 
 		const { email, password: plainPassword } = req.body
-		const { password, ...user } = await userService.getUserByEmail(email, { isLogin: true, raw: true })
-		if (!user) throw new InvariantError('Invalid email')
+		const { password, ...user } = await userService.getUserByEmail(email, { isLogin: true, raw: true }) || {}
+		if (!password && !user?.id) throw new NotFoundError('User not found')
 
 		const isPasswordMatch = await comparePassword(plainPassword, password)
 		if (!isPasswordMatch) throw new InvariantError('Password does not match')
@@ -59,59 +51,57 @@ const login = async (req, res, next) => {
 		const token = await generateToken({ id: user.id })
 		if (!token) throw new InvariantError('Failed to generate token')
 
-		req.result = { user, token }
+		resultSuccess(req, { user, token })
 	} catch (error) {
-		if (!(error instanceof Error)) {
-			error = new InvariantError(error.message)
-		}
-
-		req.error = error
-	} finally {
-		next()
+		catchError(req, error)
 	}
 }
 
-const getAuthUser = async (req, res, next) => {
+const getAuthUser = async (req, _res) => {
 	try {
 		if (req.error) throw req.error
 
 		const { user } = req
-		req.result = user
+		resultSuccess(req, user)
 	} catch (error) {
-		if (!(error instanceof Error)) {
-			error = new InvariantError(error.message)
-		}
-
-		req.error = error
-	} finally {
-		next()
+		catchError(req, error)
 	}
 }
 
-const resetPassword = async (req, res, next) => {
+const changePassword = async (req, _res) => {
 	const transaction = await sequelize.transaction()
 	try {
-		userService.setTransaction(transaction)
 		if (req.error) throw req.error
+		userService.setTransaction(transaction)
 
 		const { password: plainPassword } = req.body
 		const password = await hashPassword(plainPassword)
 		const [updated] = await userService.updateUserById(req.user.id, { password })
 		if (!updated) throw new InvariantError('Failed to reset password')
 
-		req.message = 'Password reset successfully'
-		req.statusCode = 200
+		await transaction.commit()
+		resultSuccess(req, null, 200, 'Password changed successfully')
 	} catch (error) {
-		if (!(error instanceof Error)) {
-			error = new InvariantError(error.message)
-		}
-
 		await transaction.rollback()
-		userService.setTransaction(null)
-		req.error = error
-	} finally {
-		next()
+		catchError(req, error)
 	}
 }
 
-module.exports = { getAuthUser, login, register, resetPassword }
+const generateTokenResetPassword = async (req, _res) => {
+	try {
+		if (req.error) throw req.error
+
+		const { email } = req.body
+		const user = await userService.getUserByEmail(email, { raw: true })
+		if (!user) throw new NotFoundError('User not found')
+
+		const token = await generateToken({ id: user.id }, '1h')
+		if (!token) throw new InvariantError('Failed to generate token')
+
+		resultSuccess(req, { token })
+	} catch (error) {
+		catchError(req, error)
+	}
+}
+
+module.exports = { changePassword, getAuthUser, generateTokenResetPassword, login, register }

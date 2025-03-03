@@ -1,19 +1,49 @@
-require('dotenv').config({ override: true })
-const express = require('express')
-const cors = require('cors')
-const morgan = require('morgan')
-const router = require('./routers')
-const { redisClient } = require('./configs/redis')
+require('dotenv')
+const cors = require('@fastify/cors')
+const { InvariantError } = require('./libs/exceptions')
+const { debug } = require('./libs/response')
+const { notFoundHandler } = require('./libs/middlewares')
+const registerRouter = require('./routers')
 
-const app = express()
-const { PORT = 3000, HOST = '0.0.0.0', NODE_ENV } = process.env
+const fastify = require('fastify')()
 
-app.use(cors())
-app.use(express.json())
-app.use(morgan('tiny'))
-app.use('/api', router)
+const host = process.env.HOST || '0.0.0.0'
+const port = process.env.PORT || 3000
+const allowUrls = [
+	'http://api.portfolio.host',
+	'http://localhost',
+	'http://api.postman.host',
+	'https://money-management-api-a2cf2b144c41.herokuapp.com',
+]
 
-app.listen(PORT, HOST, async () => {
-	console.log(`Server is running on ${HOST}:${PORT}`)
-	await redisClient.connect()
+fastify.register(cors, (_app) => {
+	return (req, callback) => {
+		let error = null
+		const corsOptions = { origin: allowUrls }
+
+		if (req.headers.origin && !allowUrls.includes(req.headers.origin)) {
+			error = new InvariantError('Not allowed by CORS')
+		}
+
+		// do not include CORS headers for requests from localhost
+		if (/^localhost$/m.test(req.headers.origin)) {
+			corsOptions.origin = false
+		}
+
+		// callback expects two parameters: error and options
+		callback(error, corsOptions)
+	}
+})
+
+fastify.register(registerRouter, { prefix: '/api' })
+fastify.setNotFoundHandler(notFoundHandler)
+
+fastify.listen({ port, host }, async (err, address) => {
+	if (err) {
+		debug(err)
+		fastify.log.error(err)
+		process.exit(1)
+	}
+
+	debug(`Server is running on ${address}`)
 })

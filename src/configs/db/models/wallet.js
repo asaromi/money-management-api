@@ -1,6 +1,6 @@
 'use strict';
 const { DataTypes: DT, Model } = require('sequelize');
-const { generateId } = require('../../libs/ulid')
+const { generateId } = require('../../../libs/ulid')
 module.exports = (sequelize, DataTypes = DT) => {
   class Wallet extends Model {
     /**
@@ -14,6 +14,11 @@ module.exports = (sequelize, DataTypes = DT) => {
         foreignKey: 'userId',
         as: 'user'
       })
+
+      this.hasMany(models.Transaction, {
+        foreignKey: 'walletId',
+        as: 'transactions'
+      })
     }
   }
   Wallet.init({
@@ -26,6 +31,11 @@ module.exports = (sequelize, DataTypes = DT) => {
     name: {
       allowNull: false,
       type: DataTypes.STRING,
+    },
+    balance: {
+      allowNull: false,
+      type: DataTypes.BIGINT,
+      defaultValue: 0,
     },
   }, {
     defaultScope: {

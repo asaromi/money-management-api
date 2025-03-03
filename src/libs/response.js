@@ -1,4 +1,3 @@
-const { InvariantError } = require('./exceptions')
 require('dotenv').config()
 
 const debug = (...props) => {
@@ -6,33 +5,63 @@ const debug = (...props) => {
 		return ''
 	}
 
-	console.log(...props)
+	if (props[0] instanceof Error) {
+		console.error(...props)
+	} else {
+		console.log(...props)
+	}
 }
 
 const debugError = (...props) => {
 	if (process.env.NODE_ENV !== 'development' || process.env.DEBUG !== 'true') {
-		return ''
+		return
 	}
 
 	console.error(...props)
 }
 
-const successResponse = ({ res, result, message, statusCode = 200 }) => {
-	return res.status(statusCode).json({
+const successResponse = ({ result, message }) => {
+	debug('[SUCCESS] Response:', message, result)
+	return {
 		success: true,
 		message,
 		result,
-	})
+	}
 }
 
-const errorResponse = ({ res, error = new InvariantError(), statusCode = 500 }) => {
-	const { message, statusCode: code } = error
+const errorResponse = (error) => {
+	const { message } = error ?? {}
 
-	debugError(error)
-	return res.status(code || statusCode).json({
+	debugError('[ERROR] Response:', error)
+	return {
 		success: false,
 		message,
-	})
+	}
 }
 
-module.exports = { debug, errorResponse, successResponse }
+class Response {
+	constructor({ res, error, message, result, statusCode }) {
+		this.statusCode = statusCode
+		this.message = message
+		this.result = result
+		this.reply = res
+		this._error = error
+		this._success = !error
+		this.reply.header('Content-Type', 'application/json; charset=utf-8')
+
+		return this._success ? this.success : this.error
+	}
+
+	get success() {
+		this.reply.code(this.statusCode ?? 200)
+		const { message, result } = this
+		return successResponse({ message, result })
+	}
+
+	get error() {
+		this.reply.code(this.statusCode ?? 500)
+		return errorResponse(this._error)
+	}
+}
+
+module.exports = { debug, errorResponse, successResponse, Response }

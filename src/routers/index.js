@@ -1,14 +1,21 @@
-const { Router } = require('express')
-const { handleResponse } = require('../libs/middlewares')
-const router = new Router()
+const { responseHandler } = require('../libs/middlewares')
 
 const authRouter = require('./auth')
 const categoryRouter = require('./category')
 const walletRouter = require('./wallet')
+const transactionRouter = require('./transaction')
 
-router.get('/', handleResponse)
-router.use('/auth', authRouter)
-router.use('/categories', categoryRouter)
-router.use('/wallets', walletRouter)
+const routers = (fastify, options, done) => {
+	fastify.get('/', async(req, _res) => {
+		req.message = 'Welcome to Money Management API'
+	})
+	fastify.register(authRouter, { prefix: '/auth' })
+	fastify.register(categoryRouter, { prefix: '/categories' })
+	fastify.register(walletRouter, { prefix: '/wallets' })
+	fastify.register(transactionRouter, { prefix: '/transactions' })
 
-module.exports = router
+	fastify.addHook('onSend', responseHandler)
+	done()
+}
+
+module.exports = routers

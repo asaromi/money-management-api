@@ -2,13 +2,15 @@ require('dotenv').config({ override: true })
 const request = require('supertest')
 const { HOST = 'localhost', PORT } = process.env
 const url = `${HOST}:${PORT}`
+const UserService = require('../../src/services/user')
 
 describe('Testing Auth endpoints', () => {
 	let token
-	const email = 'example.user2@gmail.com'
+	const email = 'example.user4@gmail.com'
 	const password = 'password'
 	const name = 'Example User'
 	const newPassword = 'passwordNew'
+	const userService = new UserService()
 
 	it('[Success] Register user', async () => {
 		const res = await request(url).post('/api/auth/register').send({
@@ -65,5 +67,15 @@ describe('Testing Auth endpoints', () => {
 		expect(res.statusCode).toEqual(200)
 		expect(res.body).toHaveProperty('message')
 		expect(res.body.message).toEqual('Password reset successfully')
+	})
+
+	it('If all tests are successful, then the test case would be deleted with service method', async () => {
+		try {
+			const deleted = await userService.deleteUserBy({ query: { email } })
+			expect(deleted).toEqual(1)
+		} catch (error) {
+			console.error(error)
+			throw error
+		}
 	})
 })

@@ -1,6 +1,5 @@
 const UserRepository = require('../repositories/user')
-const { redisClient } = require('../configs/redis')
-const { debug } = require('../libs/response')
+const { InvariantError } = require('../libs/exceptions')
 
 class UserService {
 	constructor(transaction) {
@@ -12,39 +11,27 @@ class UserService {
 	}
 
 	async createUser(payload) {
-		return this.userRepository.storeData(payload)
+		const user = await this.userRepository.storeData(payload)
+		if (!user) throw new InvariantError('Failed to create user')
+
+		return user
+	}
+
+	async deleteUserBy({ query }) {
+		return await this.userRepository.deleteBy({ query })
+	}
+
+	async getUserBy({ query, options }) {
+		const newOptions = this.generateOptions(options)
+		return await this.userRepository.getBy({ query, options: newOptions })
 	}
 
 	async getUserById(id, options = {}) {
-		const newOptions = this.generateOptions(options)
-
-		const redisKey = `users:U-${id}`
-		const cached = await redisClient.get(redisKey)
-		if (cached) {
-			return JSON.parse(cached)
-		}
-
-		const user = await this.userRepository.getBy({ query: { id }, options: newOptions })
-		if (user) {
-			await redisClient.set(redisKey, JSON.stringify(user), { 'EX': 300 })
-		}
-		return user
+		return await this.getUserBy({ query: { id }, options })
 	}
 
 	async getUserByEmail(email, options = {}) {
-		const newOptions = this.generateOptions(options)
-
-		const redisKey = `users:E-${email}`
-		const cached = await redisClient.get(redisKey)
-		if (cached) {
-			return JSON.parse(cached)
-		}
-
-		const user = await this.userRepository.getBy({ query: { email }, options: newOptions })
-		if(user) {
-			redisClient.set(redisKey, JSON.stringify(user), { 'EX': 300 })
-		}
-		return user
+		return await this.getUserBy({ query: { email }, options })
 	}
 
 	async updateUserBy({ query, data }) {
@@ -73,7 +60,7 @@ class UserService {
 
 		return newOptions
 	}
-	
+
 	setTransaction(transaction) {
 		this.userRepository.transaction = transaction
 	}

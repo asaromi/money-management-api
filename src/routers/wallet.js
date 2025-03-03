@@ -1,39 +1,32 @@
-const { Router } = require('express')
-const { handleResponse, validateSchema, authenticate } = require('../libs/middlewares')
+const { authenticate, validateAuthSchema, wrapHandler } = require('../libs/middlewares')
 const { createOrUpdateSchema } = require('../validators/wallet')
-const {
-	deleteWalletById,
-	getPaginationWallets,
-	getWalletById,
-	storeWallet,
-	updateWalletById,
-} = require('../controllers/wallet')
-const router = new Router()
+const { getPaginationWallets, storeWallet, getWalletById, updateWalletById, deleteWalletById } = require('../controllers/wallet')
 
-router.post(
-	'/',
-	authenticate,
-	validateSchema(createOrUpdateSchema),
-	storeWallet,
-	handleResponse,
-)
-router.get('/',
-	authenticate,
-	getPaginationWallets,
-	handleResponse,
-)
-router.get('/:id',
-	authenticate,
-	getWalletById,
-	handleResponse
-)
-router.put(
-	'/:id',
-	authenticate,
-	validateSchema(createOrUpdateSchema),
-	updateWalletById,
-	handleResponse
-)
-router.delete('/:id', authenticate, deleteWalletById, handleResponse)
+const walletRouter = (fastify, options, done) => {
+	fastify.post('/', ...wrapHandler(
+		authenticate,
+		validateAuthSchema(createOrUpdateSchema),
+		storeWallet
+	))
+	fastify.get('/', ...wrapHandler(
+		authenticate,
+		getPaginationWallets
+	))
+	fastify.get('/:id', ...wrapHandler(
+		authenticate,
+		getWalletById
+	))
+	fastify.put('/:id', ...wrapHandler(
+		authenticate,
+		validateAuthSchema(createOrUpdateSchema),
+		updateWalletById
+	))
+	fastify.delete('/:id', ...wrapHandler(
+		authenticate,
+		deleteWalletById
+	))
 
-module.exports = router
+	done()
+}
+
+module.exports = walletRouter
