@@ -1,7 +1,7 @@
 'use strict'
 const { DataTypes: DT, Model } = require('sequelize')
-const { generateId } = require('../../libs/ulid')
-const { TRANSACTION_TYPES } = require('../../libs/constant')
+const { generateId } = require('../../../libs/ulid')
+const { TRANSACTION_TYPES } = require('../../../libs/constant')
 
 module.exports = (sequelize, DataTypes = DT) => {
 	class Transaction extends Model {

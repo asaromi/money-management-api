@@ -1,8 +1,7 @@
-const { sequelize, Sequelize, Op } = require('../databases/models')
+const { sequelize, Sequelize, Op } = require('../configs/db/models')
 const {
 	BadRequestError,
 	ForbiddenError,
-	InvariantError,
 	NotFoundError,
 } = require('../libs/exceptions')
 const TransactionService = require('../services/transaction')
@@ -125,7 +124,7 @@ const getWalletById = async (req, _res) => {
 	}
 }
 
-const updateWalletById = async (req, res) => {
+const updateWalletById = async (req, _res) => {
 	const transaction = await sequelize.transaction()
 	try {
 		if (req.error) throw req.error

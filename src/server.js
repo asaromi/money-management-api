@@ -1,9 +1,9 @@
-require('dotenv').config({ override: true })
+require('dotenv')
 const cors = require('@fastify/cors')
-const { InvariantError, NotFoundError } = require('./libs/exceptions')
-const registerRouter = require('./routers')
-const { debug, errorResponse } = require('./libs/response')
+const { InvariantError } = require('./libs/exceptions')
+const { debug } = require('./libs/response')
 const { notFoundHandler } = require('./libs/middlewares')
+const registerRouter = require('./routers')
 
 const fastify = require('fastify')()
 
@@ -16,7 +16,7 @@ const allowUrls = [
 	'https://money-management-api-a2cf2b144c41.herokuapp.com',
 ]
 
-fastify.register(cors, (instance) => {
+fastify.register(cors, (_app) => {
 	return (req, callback) => {
 		let error = null
 		const corsOptions = { origin: allowUrls }

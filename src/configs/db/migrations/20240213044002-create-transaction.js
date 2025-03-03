@@ -1,5 +1,5 @@
 'use strict'
-const { TRANSACTION_TYPES } = require('../../libs/constant')
+const { TRANSACTION_TYPES } = require('../../../libs/constant')
 
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {

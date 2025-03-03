@@ -1,5 +1,5 @@
 const BaseRepository = require('./index')
-const { Category } = require('../databases/models')
+const { Category } = require('../configs/db/models')
 
 class CategoryRepository extends BaseRepository {
 	constructor(transaction) {

@@ -4,8 +4,10 @@ Money Management API - Backend Skill Test
 Introduction
 ----
 Money Management API is a simple API to manage your money, especially for your wallet and category (The current phase).
-This project is developed using NodeJS and ExpressJS as the main framework, and using PostgreSQL as the main database.
+This project is developed using NodeJS and ExpressJS as the main backend framework, and using PostgresSQL as the main database.
 The project also using `sequelize` as the ORM to manage the database.
+
+After the first phase using express, then I want to experiment to migrate it on fastify. And now, it's using fastify as the main framework.
 
 **Why MVC and MVCSR Pattern?**
 

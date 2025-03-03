@@ -1,8 +1,8 @@
 'use strict';
 const { DataTypes: DT, Model } = require('sequelize');
-const { generateId } = require('../../libs/ulid')
+const { generateId } = require('../../../libs/ulid')
 module.exports = (sequelize, DataTypes = DT) => {
-  class Category extends Model {
+  class Wallet extends Model {
     /**
      * Helper method for defining associations.
      * This method is not a part of Sequelize lifecycle.
@@ -10,9 +10,18 @@ module.exports = (sequelize, DataTypes = DT) => {
      */
     static associate(models) {
       // define association here
+      this.belongsTo(models.User, {
+        foreignKey: 'userId',
+        as: 'user'
+      })
+
+      this.hasMany(models.Transaction, {
+        foreignKey: 'walletId',
+        as: 'transactions'
+      })
     }
   }
-  Category.init({
+  Wallet.init({
     id: {
       allowNull: false,
       primaryKey: true,
@@ -23,18 +32,19 @@ module.exports = (sequelize, DataTypes = DT) => {
       allowNull: false,
       type: DataTypes.STRING,
     },
-    slug: {
+    balance: {
       allowNull: false,
-      type: DataTypes.STRING
+      type: DataTypes.BIGINT,
+      defaultValue: 0,
     },
   }, {
     defaultScope: {
       attributes: { exclude: ['deletedAt'] },
     },
-    modelName: 'Category',
+    modelName: 'Wallet',
     paranoid: true,
     sequelize,
-    tableName: 'categories',
+    tableName: 'wallets',
   });
-  return Category;
+  return Wallet;
 };

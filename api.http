@@ -1,0 +1,29 @@
+### [GET] /
+GET http://api.postman.host/
+
+### [GET] /api
+GET http://api.postman.host/api
+
+### [GET] /api
+GET http://api.postman.host/api/auth
+Authorization: Bearer eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjAxajBqc3A2dmI4cWU0OHkzdDEyZzcwamg4IiwiaWF0IjoxNzE4NjE3ODQwLCJleHAiOjE3MTg3MDQyNDB9.wGBICjh1k5N_aakD9m4P69SSpWpKOvhCBt2xtneztSuKET2d1RhRG-7OSCmgM0WUjV5I2OpSbOSEiGbuaB76JA
+
+### [POST] /auth/login
+POST https://money-api.asaromi.dev/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "asami.mayuri1@gmail.com",
+  "password": "password"
+}
+
+### [POST] /auth/register
+POST http://api.postman.host/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "asami.mayuri1@gmail.com",
+  "name": "Asami Mayuri",
+  "password": "password",
+  "confirmPassword": "password"
+}

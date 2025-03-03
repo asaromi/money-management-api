@@ -1,4 +1,4 @@
-const { sequelize } = require('../databases/models')
+const { sequelize } = require('../configs/db/models')
 const { hashPassword, comparePassword } = require('../libs/bcrypt')
 const { InvariantError, NotFoundError } = require('../libs/exceptions')
 const { resultSuccess, catchError } = require('../libs/helpers')
@@ -30,7 +30,7 @@ const register = async (req, _res) => {
 		if (!token) throw new InvariantError('Failed to generate token')
 
 		await transaction.commit()
-		resultSuccess(req, { token }, 201, 'User created successfully')
+		resultSuccess(req, { user, token }, 201)
 	} catch (error) {
 		await transaction.rollback()
 		catchError(req, error)

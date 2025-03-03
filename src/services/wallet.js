@@ -20,11 +20,10 @@ class WalletService {
 
 		debug('Recalculating wallet balance by', counter)
 
-		const promises = [this.walletRepository.adjustBalanceBy({
+		await this.walletRepository.adjustBalanceBy({
 			query,
 			counter,
-		}).then(() => success = true)]
-		await Promise.all(promises)
+		}).then(() => success = true)
 		return success
 	}
 

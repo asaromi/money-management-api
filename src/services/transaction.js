@@ -1,4 +1,4 @@
-const { Transaction } = require('../databases/models')
+const { Transaction } = require('../configs/db/models')
 const { debug } = require('../libs/response')
 const { InvariantError, NotFoundError, BadRequestError } = require('../libs/exceptions')
 const TransactionRepository = require('../repositories/transaction')

@@ -1,6 +1,6 @@
-const { Op, sequelize, Category, Wallet } = require('../databases/models')
+const { Op, sequelize, Category, Wallet } = require('../configs/db/models')
 const { TRANSACTION_TYPE } = require('../libs/constant')
-const { BadRequestError, InvariantError, NotFoundError } = require('../libs/exceptions')
+const { BadRequestError, NotFoundError } = require('../libs/exceptions')
 const TransactionService = require('../services/transaction')
 const WalletService = require('../services/wallet')
 const { debug } = require('../libs/response')
@@ -28,6 +28,7 @@ const detailTransaction = (transaction) => {
 
 const storeTransaction = async (req, _res) => {
 	const dbTransaction = await sequelize.transaction()
+
 	try {
 		transactionService.setTransaction(dbTransaction)
 		walletService.setTransaction(dbTransaction)

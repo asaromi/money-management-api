@@ -1,4 +1,4 @@
-const { handleResponse, onSendResponse, responseHandler } = require('../libs/middlewares')
+const { responseHandler } = require('../libs/middlewares')
 
 const authRouter = require('./auth')
 const categoryRouter = require('./category')

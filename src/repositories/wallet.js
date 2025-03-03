@@ -1,5 +1,5 @@
 const BaseRepository = require('./index')
-const { Wallet } = require('../databases/models')
+const { Wallet } = require('../configs/db/models')
 const { debug } = require('../libs/response')
 
 class WalletRepository extends BaseRepository {

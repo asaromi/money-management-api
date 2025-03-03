@@ -1,4 +1,4 @@
-const { sequelize, Op, Sequelize } = require('../databases/models')
+const { sequelize, Op, Sequelize } = require('../configs/db/models')
 const { InvariantError } = require('../libs/exceptions')
 
 const CategoryService = require('../services/category')

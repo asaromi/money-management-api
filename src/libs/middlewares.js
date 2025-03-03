@@ -1,7 +1,7 @@
 const Joi = require('joi')
-const { AuthError, ForbiddenError, BadRequestError, NotFoundError } = require('./exceptions')
+const { AuthError, BadRequestError, NotFoundError } = require('./exceptions')
 const { verifyToken } = require('./jwt')
-const { errorResponse, debug, successResponse, Response } = require('./response')
+const { errorResponse, Response } = require('./response')
 const UserService = require('../services/user')
 
 const userService = new UserService()
@@ -24,8 +24,7 @@ const authenticate = async (req, _res) => {
 }
 
 const responseHandler = (req, res, payload, done) => {
-	const { error, result, statusCode: code } = req
-	let message = req?.message || (!result || 'Hello, Welcome to the Developer World!')
+	const { error, message, result, statusCode: code } = req
 	payload = new Response({ res, error, message, result, statusCode: code })
 
 	done(error || null, JSON.stringify(payload))
