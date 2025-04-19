@@ -1,14 +1,14 @@
 const Joi = require('joi')
 const { AuthError, BadRequestError, NotFoundError } = require('./exceptions')
 const { verifyToken } = require('./jwt')
-const { errorResponse, Response } = require('./response')
+const { errorResponse, debug, Response, successResponse } = require('./response')
 const UserService = require('../services/user')
 
 const userService = new UserService()
 
 const authenticate = async (req, _res) => {
 	try {
-		const authorization = req.headers.authorization || req.params.token
+		const authorization = req.headers.authorization || (req.query?.token ? `Bearer ${req.query.token || ''}` : '')
 		if (!authorization) throw new AuthError('Token not found')
 
 		const [type, token] = authorization.split(' ')
@@ -23,11 +23,11 @@ const authenticate = async (req, _res) => {
 	}
 }
 
-const responseHandler = (req, res, payload, done) => {
+const responseHandler = (req, res, options, done) => {
 	const { error, message, result, statusCode: code } = req
-	payload = new Response({ res, error, message, result, statusCode: code })
+	const payload = new Response({ res, error, message, result, statusCode: code })
 
-	done(error || null, JSON.stringify(payload))
+	done(null, JSON.stringify(payload))
 }
 
 const notFoundHandler = (req, res) => {
@@ -38,6 +38,7 @@ const notFoundHandler = (req, res) => {
 const validateSchema = (schema = Joi.object(), source = 'body') =>
 	(req, res, next) => {
 		try {
+			debug(`validate req[${source}]:`, req[source])
 			const { error } = schema.validate(req[source])
 			if (error) throw new BadRequestError(error.message)
 		} catch (error) {
@@ -65,10 +66,10 @@ const validateAuthSchema = (schema = Joi.object(), source = 'body') =>
 	}
 
 const wrapHandler = (...handlers) => {
-	const [handler, ...preHandler] = [...handlers.slice(-1), ...handlers.slice(0, -1)]
+	const [finalHandler, ...preHandler] = [...handlers.slice(-1), ...handlers.slice(0, -1)]
 	const options = { preHandler }
 
-	return [options, handler]
+	return [options, finalHandler]
 }
 
 module.exports = {

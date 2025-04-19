@@ -36,19 +36,26 @@ const errorResponse = (error) => {
 	return {
 		success: false,
 		message,
+		result: error || null
 	}
 }
 
 class Response {
 	constructor({ res, error, message, result, statusCode }) {
-		this.statusCode = statusCode
-		this.message = message
-		this.result = result
+		this.statusCode = error?.statusCode || statusCode
+		this.message = error?.message || message || null
+		this.result = result || null
 		this.reply = res
 		this._error = error
 		this._success = !error
 		this.reply.header('Content-Type', 'application/json; charset=utf-8')
 
+		debug({
+			success: this._success,
+			result: this.result,
+			message: this.message,
+			code: this.statusCode,
+		})
 		return this._success ? this.success : this.error
 	}
 
